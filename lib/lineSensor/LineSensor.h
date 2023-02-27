@@ -8,19 +8,23 @@ class LineSensor {
     public:
         // calcula onde a linha está 
         uint32_t searchLine();
-        /*
+        /**
+         * @brief
             Define os pontos maximos e minimos de cada sensor
             modos 0 ou 1
+            @param
             0: mede o preto e apos 2 segundos mede o branco
             com o carrinho estatico nos 2 pontos.
+            @param
             1: salva os pontos maximos e minimos capitado 
             com o carrinho passando sobre a linha
         */
         void calibration(uint8_t mode); 
         // verifica se os valores de claro e escuro são validos
         void isValid();
-        /*
+        /**
             le o valor que um sensor está capitando
+            @param
             index = numero do sensor
         */
         uint32_t read(uint8_t index);
@@ -42,12 +46,10 @@ class LineSensor {
         void setMaxAndMinAv();
         // calcula os pontos maximos e minimos com o sensor em movimento
         void setMaxAndMinEx();
-        // coleta os pontos maximos
-        void getMax(); 
-        // coleta os pontos minimos
-        void getMin();
+        // coleta as medições do sensord
+        void getValues(uint16_t * array); 
         // contem os pontos maximos e minimos de cada sensor
-        int16_t maximum[8], minimum[8];
+        uint16_t maximum[8], minimum[8];
         // quantidade e pinos sensores
         uint8_t sensorCount, sensorPins[8];
         // valor do branco, do preto e o quanto ainda é considerado branco 

@@ -78,7 +78,7 @@ PID::pidEspecif(double kp, double ki, double kd, int32_t error){
     double I = (sumError * ki) * t;
 
     // derivativa
-    double D = (lastError - error) * kd * t;
+    double D = (error - lastError) * kd * t;
 
     // garante que a integral nao sature
     if((I >= speed) && (error >= 0)){
@@ -119,18 +119,14 @@ PID::calcPID(int32_t error){
 
 int32_t 
 PID::calcPID(int32_t error, uint8_t mode){
-    switch (mode)
-    {
+    switch (mode){
     case ROTACIONAL:
         return pidEspecif(kpr, kir, kdr, error);
-        break;
     case TRANSLACIONAL:
         return pidEspecif(kpt, kit, kdt, error);
-        break;
-    
+
     default:
-        Serial.println("Modo não encontrado!");
-        break;
+        Serial.println("Modo não encontrado!"); break;
     }
 }
 

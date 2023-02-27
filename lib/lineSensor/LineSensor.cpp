@@ -42,7 +42,7 @@ void LineSensor::setTrackCharacteristics(uint16_t line, uint16_t rug, uint16_t l
     this->lineTolerance = lineTolerance;
 }
 
-void LineSensor::getMax(){
+void LineSensor::getValues(uint16_t * array){
     // calcula uma media de 10 medidas
     for(uint8_t i = 0; i < sensorCount; i++){
         int sum = 0;
@@ -50,19 +50,7 @@ void LineSensor::getMax(){
             sum += analogRead(sensorPins[i]);
             delay(5);
         }
-        maximum[i] = sum/10; // salva a media
-    }
-}
-
-void LineSensor::getMin(){
-    // calcula uma media de 10 medidas
-    for(uint8_t i = 0; i < sensorCount; i++){
-        int sum = 0;
-        for(int j = 0; j < 10; j++){
-            sum += analogRead(sensorPins[i]);
-            delay(5);
-        }
-        minimum[i] = sum/10; // salva a media
+        array[i] = (uint8_t) sum/10; // salva a media
     }
 }
 
@@ -107,7 +95,7 @@ void LineSensor::setMaxAndMinAv(){
         Serial.println("Medindo a itensidade da luz para o preto...");
     delay(2000);
     digitalWrite(2, LOW);
-    getMax();
+    getValues(maximum);
 
     // pisca o led
     delay(100);
@@ -122,7 +110,7 @@ void LineSensor::setMaxAndMinAv(){
         Serial.println("Medindo a itensidade da luz para o branco...");
     delay(2000);
     digitalWrite(2, LOW);
-    getMin();
+    getValues(minimum);
 
     // pisca o led
     delay(100);

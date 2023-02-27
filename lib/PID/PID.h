@@ -22,7 +22,13 @@ class PID{
         void setVerb(bool verb);
         // calcula o PID rotacional - default
         int32_t calcPID(int32_t error);
-        // escolhemos qual modo do PID usar 
+        /**
+         * escolhemos qual modo do PID usar 
+         * @param
+         * Erro calculado com a biblioteca linesensor
+         * @param
+         * mode Rotacional ou Translacional
+         */
         int32_t calcPID(int32_t error, uint8_t mode);
         // printa as configurações
         void printConfig();
