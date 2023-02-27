@@ -58,6 +58,13 @@ PID::setVerb(bool verb){
     this->verb = verb; 
 }
 
+void
+PID::printConfig(){
+    Serial.printf("Constantes rotacionais: \n kp = %f\n ki = %f \n kd = %f \n\n", kdr, kir, kdr);
+    Serial.printf("Constantes translacionais: \n kp = %f\n ki = %f \n kd = %f \n\n", kdt, kit, kdt);
+    Serial.printf("Velocidade: %d \n\n", speed);
+}
+
 int32_t
 PID::pidEspecif(double kp, double ki, double kd, int32_t error){
     // calcula quanto tempo passou desde o ultimo calculo

@@ -24,6 +24,8 @@ class PID{
         int32_t calcPID(int32_t error);
         // escolhemos qual modo do PID usar 
         int32_t calcPID(int32_t error, uint8_t mode);
+        // printa as configurações
+        void printConfig();
     private:
         // calculo do PID geral
         int pidEspecif(double kp, double ki, double kd, int32_t error);
