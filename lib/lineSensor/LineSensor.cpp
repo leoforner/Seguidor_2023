@@ -2,9 +2,8 @@
 #include <cstdint>
 #include <Arduino.h>
 
-void LineSensor::begin(uint8_t sensorCount, uint8_t sensorPins[8], bool lineWhite){
-    this->sensorCount = sensorCount;
-    for(int i = 0; i < sensorCount; i++)
+void LineSensor::begin(uint8_t sensorPins[8], bool lineWhite){
+    for(int i = 0; i < 8; i++)
         this->sensorPins[i] = sensorPins[i];
     this->lineWhite = lineWhite;
     // configrações padroes
@@ -15,7 +14,7 @@ void LineSensor::begin(uint8_t sensorCount, uint8_t sensorPins[8], bool lineWhit
     lineTolerance = 0.3 * line;
 
     // deixa os valores maximos e minimos diferentes de null
-    for(int i = 0; i < sensorCount; i++){
+    for(int i = 0; i < 8; i++){
         maximum[i] = 0;
         minimum[i] = 4095;
     }
@@ -23,8 +22,8 @@ void LineSensor::begin(uint8_t sensorCount, uint8_t sensorPins[8], bool lineWhit
 
 void LineSensor::printConfig(){
     Serial.print("\nAs configurações do sensor são:\n");
-    Serial.printf("Nº de sensores: %d \n", sensorCount);
-    for(int i = 0; i < sensorCount; i++){
+    Serial.printf("Nº de sensores: %d \n", 8);
+    for(int i = 0; i < 8; i++){
         Serial.printf("Pin %d = %d \t", i+1, sensorPins[i]);
         Serial.printf("Max: %d \t Min: %d \n", maximum[i], minimum[i]) ;
     }
@@ -44,7 +43,7 @@ void LineSensor::setTrackCharacteristics(uint16_t line, uint16_t rug, uint16_t l
 
 void LineSensor::getValues(uint16_t * array){
     // calcula uma media de 10 medidas
-    for(uint8_t i = 0; i < sensorCount; i++){
+    for(uint8_t i = 0; i < 8; i++){
         int sum = 0;
         for(uint8_t j = 0; j < 10; j++){
             sum += analogRead(sensorPins[i]);
@@ -61,20 +60,20 @@ void LineSensor::isValid(){
     if (verb){
         Serial.println("O resultado da medida foi:");
         Serial.print("Minimos: \t");
-        for(int i = 0; i < sensorCount; i++){
+        for(int i = 0; i < 8; i++){
             Serial.print(minimum[i]);
             Serial.print("\t");
         }
         Serial.println();
         Serial.print("Maximos: \t");
-        for(int i = 0; i < sensorCount; i++){
+        for(int i = 0; i < 8; i++){
             Serial.print(maximum[i]);
             Serial.print("\t"); 
         }
         Serial.println();
     }
 
-    for(uint8_t i = 0; i < sensorCount; i++){
+    for(uint8_t i = 0; i < 8; i++){
         if(minimum[i] >= maximum[i]){
             if(verb)
                 Serial.println("Erro. Refaça as medidas!");
@@ -88,7 +87,7 @@ void LineSensor::isValid(){
     }
 }
 
-void LineSensor::setMaxAndMinAv(){
+void LineSensor::setMaxAndMinEs(){
     // mede o quanto está lendo na parte escura da pista
     digitalWrite(2, HIGH);
     if(verb)
@@ -123,14 +122,14 @@ void LineSensor::setMaxAndMinAv(){
     isValid();
 }
 
-void LineSensor::setMaxAndMinEx(){
+void LineSensor::setMaxAndMinDi(){
     // salva os pontos maximos e minimos de cada sensor
     uint32_t start = millis();
     digitalWrite(2, HIGH);
     if(verb)
         Serial.println("Passe o sensor sobre a linha e o tapete enquanto o led está acesso para definir o branco e preto de cada sensor.");
     while((millis() - start) < 5000){
-        for(uint8_t i = 0; i < sensorCount; i++){
+        for(uint8_t i = 0; i < 8; i++){
             int x = analogRead(sensorPins[i]);
             if(x > maximum[i])
                 maximum[i] = x;
@@ -149,11 +148,11 @@ void LineSensor::calibration(uint8_t mode){
         Serial.println("Calibração começou.");
 
     switch (mode){
-    case 0:
-        setMaxAndMinAv();
+    case ESTATICO:
+        setMaxAndMinEs();
         break;
-    case 1:
-        setMaxAndMinEx();
+    case DINAMICO:
+        setMaxAndMinDi();
         break;
 
     default:
@@ -185,7 +184,7 @@ uint32_t LineSensor::searchLine(){
     // calcula onde a linha esta
     long int sum = 0, measuraments = 0;
     bool inLine = false;
-    for(uint8_t i = 0; i < sensorCount; i++){
+    for(uint8_t i = 0; i < 8; i++){
         int x = read(i);
         if(verb)
             Serial.printf("%d \t", x);
@@ -198,10 +197,10 @@ uint32_t LineSensor::searchLine(){
         lastPosition = sum/measuraments; // media ponderada
     }else{ 
         // caso nao detecte a linha ele satura pro ultimo lado visto
-        if(lastPosition < ((sensorCount-1)*line)/2){
+        if(lastPosition < ((8-1)*line)/2){
             lastPosition = 0;
         }else{
-            lastPosition = (sensorCount-1) * line;
+            lastPosition = (8-1) * line;
         }
     }
     if(verb)
