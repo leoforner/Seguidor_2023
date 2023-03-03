@@ -12,6 +12,7 @@ void LineSensor::begin(uint8_t sensorPins[8], bool lineWhite){
     line = 1000;
     rug = 0;
     lineTolerance = 0.3 * line;
+    multiplex = false;
 
     // deixa os valores maximos e minimos diferentes de null
     for(int i = 0; i < 8; i++){
@@ -19,6 +20,29 @@ void LineSensor::begin(uint8_t sensorPins[8], bool lineWhite){
         minimum[i] = 4095;
     }
 }
+
+void LineSensor::beginMultiplex(uint8_t pinos[3], uint8_t multiplexOut,  bool lineWhite){
+    for(int i = 0; i < 3; i++){
+        this->pinos[i] = pinos[i];
+        pinMode(pinos[i], OUTPUT);
+    }
+    this->multiplexOut = multiplexOut;
+    multiplex = true;
+    this->lineWhite = lineWhite;
+    pinMode(2, OUTPUT);
+    verb = false;
+    line = 1000;
+    rug = 0;
+    lineTolerance = 0.3 * line;
+
+    // deixa os valores maximos e minimos diferentes de null
+    for(int i = 0; i < 8; i++){
+        maximum[i] = 0;
+        minimum[i] = 4095;
+    }
+}
+
+
 
 void LineSensor::printConfig(){
     Serial.print("\nAs configurações do sensor são:\n");
@@ -44,12 +68,12 @@ void LineSensor::setTrackCharacteristics(uint16_t line, uint16_t rug, uint16_t l
 void LineSensor::getValues(uint16_t * array){
     // calcula uma media de 10 medidas
     for(uint8_t i = 0; i < 8; i++){
-        int sum = 0;
+        uint32_t sum = 0;
         for(uint8_t j = 0; j < 10; j++){
-            sum += analogRead(sensorPins[i]);
+            sum += read(i);
             delay(5);
         }
-        array[i] = (uint8_t) sum/10; // salva a media
+        array[i] = (uint16_t) sum/10; // salva a media
     }
 }
 
@@ -130,7 +154,7 @@ void LineSensor::setMaxAndMinDi(){
         Serial.println("Passe o sensor sobre a linha e o tapete enquanto o led está acesso para definir o branco e preto de cada sensor.");
     while((millis() - start) < 5000){
         for(uint8_t i = 0; i < 8; i++){
-            int x = analogRead(sensorPins[i]);
+            int x = read(i);  
             if(x > maximum[i])
                 maximum[i] = x;
             if(x < minimum[i])
@@ -162,7 +186,24 @@ void LineSensor::calibration(uint8_t mode){
 }
 
 uint32_t LineSensor::read(uint8_t index){
-    int value = analogRead(sensorPins[index]);
+    if(multiplex){
+        int a = bitRead(index, 0);
+        int b = bitRead(index, 1);
+        int c = bitRead(index, 2);
+
+        digitalWrite(pinos[0], a);
+        digitalWrite(pinos[1], b);
+        digitalWrite(pinos[2], c);
+
+        return analogRead(multiplexOut);
+    }else{
+        return analogRead(sensorPins[index]);
+    }
+}
+
+uint32_t LineSensor::readNormalized(uint8_t index){
+
+    int value = read(index);
 
     if(!lineWhite){
         value = map(value, minimum[index], maximum[index], rug, line);
@@ -185,10 +226,10 @@ uint32_t LineSensor::searchLine(){
     long int sum = 0, measuraments = 0;
     bool inLine = false;
     for(uint8_t i = 0; i < 8; i++){
-        int x = read(i);
+        int x = readNormalized(i);
         if(verb)
             Serial.printf("%d \t", x);
-        sum += x * line * i+1;  // soma da media multiplicado pelo peso do sensor
+        sum += x * line * (i+1);  // soma da media multiplicado pelo peso do sensor
         measuraments += x;      // soma das medidas
         if(x > lineTolerance) 
             inLine = true;
@@ -197,10 +238,10 @@ uint32_t LineSensor::searchLine(){
         lastPosition = sum/measuraments; // media ponderada
     }else{ 
         // caso nao detecte a linha ele satura pro ultimo lado visto
-        if(lastPosition < ((8-1)*line)/2){
-            lastPosition = 0;
+        if(lastPosition < (8 * line)/2){
+            lastPosition = line;
         }else{
-            lastPosition = (8-1) * line;
+            lastPosition = 8 * line;
         }
     }
     if(verb)
