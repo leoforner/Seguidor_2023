@@ -74,13 +74,9 @@ void loop(){
     ve2 = sqrt(v1g[0]*v1g[0] + v1g[1]*v1g[1]);
     vd2 = sqrt(v2g[0]*v2g[0] + v2g[1]*v2g[1]);  
 
+    
     Serial.printf("v1: %.3f, %.3f \tv2: %.3f, %.3f\tv1: %.3f, %.3f\tv2: %.3f, %.3f\t%.3f\t%.3f\t%.3f\t%.3f\t", 
     v1[0], v1[1], v2[0], v2[1], v1g[0], v1g[1], v2g[0], v2g[1], ve1, vd1, ve2, vd2);
-
-    phi1 = 1.57 - atan2(r, (vd1 - ve1));
-    phi2 = atan2((vd2 - ve2), r) - 1.57;
-
-    Serial.printf("r1: %.3f\tr2: %.3f\n", ve1/sin(phi1), ve2/sin(phi2));
 
     delay(250);
 }
