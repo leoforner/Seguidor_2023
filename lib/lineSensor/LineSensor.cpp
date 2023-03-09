@@ -62,7 +62,7 @@ void LineSensor::printConfig(){
         if(multiplex)
             Serial.printf("Pin: %d\t", i+1);
         else
-            Serial.printf("Pin: %d\t", i+1);
+            Serial.printf("Pin %d = %d\t", i+1, sensorPins[i]);
         Serial.printf("Max: %d\t Min: %d\n", maximum[i], minimum[i]) ;
     }
     Serial.printf("Linha branca: %s\t", (lineWhite ? "True" : "False"));
