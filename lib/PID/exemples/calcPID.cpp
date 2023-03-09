@@ -11,7 +11,7 @@ void setup() {
     Serial.begin(115200);
 
     // inicia a placa de sensores
-    ls.begin((uint8_t) 8, pinos, true);
+    ls.begin(8, pinos, 4095);
     ls.calibration(0);
 
     // inicia o PID

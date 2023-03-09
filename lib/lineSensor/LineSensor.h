@@ -37,8 +37,8 @@ class LineSensor {
             inicia o sensor frontal dizendo quantos sensores ele possui,
             seus respectivos pinos e se a linha é branca ou preta
         */
-        void begin(uint8_t sensorPins[8], bool lineWhite);
-        void beginMultiplex(uint8_t pinos[3], uint8_t multiplexOut, bool lineWhite);
+        void begin(uint8_t sensorCount, uint8_t sensorPins[], bool lineWhite);
+        void beginMultiplex(uint8_t pinCount, uint8_t pinos[], uint8_t multiplexOut, bool lineWhite);
         // caso queira mudar as medidas padrões dos calculos
         void setTrackCharacteristics(uint16_t line, uint16_t rug, uint16_t lineTolerance);
         // busca os dados do sensor
@@ -58,13 +58,13 @@ class LineSensor {
         // coleta as medições do sensord
         void getValues(uint16_t * array); 
         // contem os pontos maximos e minimos de cada sensor
-        uint16_t maximum[8], minimum[8];
+        uint16_t* maximum,* minimum;
         // quantidade e pinos sensores
-        uint8_t sensorPins[8];
+        uint8_t* sensorPins;
         // valor do branco, do preto e o quanto ainda é considerado branco 
         uint16_t line, rug, lineTolerance;
         // pinos do multiplexador
-        uint8_t pinos[3], multiplexOut;
+        uint8_t* pinos, multiplexOut, sensorCount, pinsCount;
         // salva se a linha é branca ou preta
         bool lineWhite, multiplex;
         // ultima posicao da linha
