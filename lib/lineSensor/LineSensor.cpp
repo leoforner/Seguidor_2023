@@ -4,7 +4,13 @@
 #include <Arduino.h>
 
 void LineSensor::begin(uint8_t sensorCount, uint8_t sensorPins[], bool lineWhite){
+    // define tamanho dos arrays de acordo com a quantidade de sensores
     this->sensorPins = new uint8_t[sensorCount];
+    weights = new float[sensorCount];
+    maximum = new uint16_t[sensorCount];
+    minimum = new uint16_t[sensorCount];
+
+    // configura os pinos
     for(int i = 0; i < sensorCount; i++)
         this->sensorPins[i] = sensorPins[i];
     this->lineWhite = lineWhite;
@@ -16,40 +22,45 @@ void LineSensor::begin(uint8_t sensorCount, uint8_t sensorPins[], bool lineWhite
     rug = 0;
     lineTolerance = 0.3 * line;
     multiplex = false;
-    maximum = new uint16_t[sensorCount];
-    minimum = new uint16_t[sensorCount];
 
     //deixa os valores maximos e minimos diferentes de null
     for(int i = 0; i < sensorCount; i++){
         maximum[i] = 0;
         minimum[i] = 4095;
+        weights[i] = i; // define os pesos default 1, 2, 3...
     }
 }
 
 void LineSensor::beginMultiplex(uint8_t pinCount, uint8_t pinos[], uint8_t multiplexOut,  bool lineWhite){
+    // define tamanho dos arrays de acordo com a quantidade de sensores
+    this->sensorCount = pow(2, pinCount);
     this->pinos = new uint8_t[pinCount];
+    weights = new float[sensorCount];
+    maximum = new uint16_t[sensorCount];
+    minimum = new uint16_t[sensorCount];
+
+    // configura os pinos
     for(int i = 0; i < pinCount; i++){
         this->pinos[i] = pinos[i];
         pinMode(pinos[i], OUTPUT);
     }
     this->pinsCount = pinCount;
-    this->sensorCount = pow(2, pinCount);
     this->multiplexOut = multiplexOut;
-    multiplex = true;
     this->lineWhite = lineWhite;
+
+    // configrações padroes
     pinMode(2, OUTPUT);
+    multiplex = true;
     verb = false;
     line = 1000;
     rug = 0;
     lineTolerance = 0.3 * line;
 
-    maximum = new uint16_t[sensorCount];
-    minimum = new uint16_t[sensorCount];
-
     //deixa os valores maximos e minimos diferentes de null
     for(int i = 0; i < pow(2, pinCount); i++){
         maximum[i] = 0;
         minimum[i] = 4095;
+        weights[i] = i; // define os pesos default 1, 2, 3...
     }
 }
 
@@ -67,6 +78,13 @@ void LineSensor::printConfig(){
     }
     Serial.printf("Linha branca: %s\t", (lineWhite ? "True" : "False"));
     Serial.printf("Linha: %d\t Pista: %d\t Toletancia da linha: %d\n\n", line, rug, lineTolerance);
+}
+
+void LineSensor::setweights(float* weights){
+    // altear os pesos de cada sensor
+    this->weights = new float[sensorCount];
+    for(int i = 0; i < sensorCount; i++)
+        this->weights[i] = weights[i];
 }
 
 void LineSensor::setVerb(bool verb){
@@ -94,7 +112,6 @@ void LineSensor::getValues(uint16_t * array){
 void LineSensor::isValid(){
     // caso os valores de maximos e minimos nao fazerem sentido 
     // não é possivel calcular a posição da linha
-
     if (verb){
         Serial.println("O resultado da medida foi:");
         Serial.print("Minimos: \t");
@@ -181,7 +198,7 @@ void LineSensor::setMaxAndMinDi(){
     isValid();
 }
 
-void LineSensor::calibration(uint8_t mode){
+void LineSensor::calibration(calibr mode){
     if(verb)
         Serial.println("Calibração começou.");
 
@@ -201,6 +218,7 @@ void LineSensor::calibration(uint8_t mode){
 
 uint32_t LineSensor::read(uint8_t index){
     if(multiplex){
+        // define o pino que será lido
         int a = bitRead(index, 0);
         int b = bitRead(index, 1);
         int c = bitRead(index, 2);
@@ -216,9 +234,7 @@ uint32_t LineSensor::read(uint8_t index){
 }
 
 uint32_t LineSensor::readNormalized(uint8_t index){
-
     int value = read(index);
-
     if(!lineWhite){
         value = map(value, minimum[index], maximum[index], rug, line);
     }else{
@@ -231,31 +247,31 @@ uint32_t LineSensor::readNormalized(uint8_t index){
 
     if (value > line)
         value = line;
-
     return value;
 }
 
 uint32_t LineSensor::searchLine(){
     // calcula onde a linha esta
-    long int sum = 0, measuraments = 0;
+    double sum = 0, measuraments = 0;
     bool inLine = false;
     for(uint8_t i = 0; i < sensorCount; i++){
         int x = readNormalized(i);
         if(verb)
             Serial.printf("%d \t", x);
-        sum += x * line * (i+1);  // soma da media multiplicado pelo peso do sensor
+        sum += x * line * weights[i];  // soma da media multiplicado pelo peso do sensor
         measuraments += x;      // soma das medidas
         if(x > lineTolerance) 
             inLine = true;
+            
     }
     if(inLine){
         lastPosition = sum/measuraments; // media ponderada
     }else{ 
         // caso nao detecte a linha ele satura pro ultimo lado visto
-        if(lastPosition < (sensorCount * line)/2){
-            lastPosition = line;
+        if(lastPosition < ((weights[sensorCount-1] * line)/2)){
+            lastPosition = 0;
         }else{
-            lastPosition = sensorCount * line;
+            lastPosition = (weights[sensorCount-1]) * line;
         }
     }
     if(verb)

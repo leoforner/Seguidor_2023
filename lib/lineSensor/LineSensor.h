@@ -7,7 +7,7 @@
 typedef enum{
     ESTATICO,
     DINAMICO
-}calibracao;
+}calibr;
 
 class LineSensor {
     public:
@@ -24,7 +24,7 @@ class LineSensor {
             DINAMICO: salva os pontos maximos e minimos capitado 
             com o carrinho passando sobre a linha
         */
-        void calibration(uint8_t mode); 
+        void calibration(calibr mode); 
         // verifica se os valores de claro e escuro são validos
         void isValid();
         /**
@@ -44,7 +44,7 @@ class LineSensor {
         // busca os dados do sensor
         void printConfig();
         // define se vai printar comentarios das funcoes
-        
+        void setweights(float* weights);
         void setVerb(bool verb);
     private:
         // le um pino pelo multiplex 
@@ -57,8 +57,10 @@ class LineSensor {
         void setMaxAndMinDi();
         // coleta as medições do sensord
         void getValues(uint16_t * array); 
-        // contem os pontos maximos e minimos de cada sensor
+        // contem os pontos maximos e minimos de cada sensor e o peso de cada sensor
         uint16_t* maximum,* minimum;
+        // peso de cada sensor
+        float* weights;
         // quantidade e pinos sensores
         uint8_t* sensorPins;
         // valor do branco, do preto e o quanto ainda é considerado branco 
@@ -68,5 +70,5 @@ class LineSensor {
         // salva se a linha é branca ou preta
         bool lineWhite, multiplex;
         // ultima posicao da linha
-        int lastPosition;  
+        uint32_t lastPosition;  
 };
