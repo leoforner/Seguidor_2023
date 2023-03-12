@@ -12,7 +12,7 @@ typedef enum{
 class LineSensor {
     public:
         // calcula onde a linha está 
-        uint32_t searchLine();
+        double searchLine();
         /**
          * @brief
             Define os pontos maximos e minimos de cada sensor
@@ -70,5 +70,5 @@ class LineSensor {
         // salva se a linha é branca ou preta
         bool lineWhite, multiplex;
         // ultima posicao da linha
-        uint32_t lastPosition;  
+        double lastPosition;  
 };

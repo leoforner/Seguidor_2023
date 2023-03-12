@@ -34,7 +34,7 @@ class PID{
         void printConfig();
     private:
         // calculo do PID geral
-        int pidEspecif(double kp, double ki, double kd, int32_t error);
+        int simplePID(double kp, double ki, double kd, int32_t error);
         // converte o PID para PWM - ainda precisamos pensar sobre
         int transformForPWM(int PID);
         uint32_t lastTime;

@@ -66,7 +66,7 @@ PID::printConfig(){
 }
 
 int32_t
-PID::pidEspecif(double kp, double ki, double kd, int32_t error){
+PID::simplePID(double kp, double ki, double kd, int32_t error){
     // calcula quanto tempo passou desde o ultimo calculo
     float t = (millis() - lastTime)/1000.0;
     lastTime = millis();
@@ -114,16 +114,16 @@ PID::pidEspecif(double kp, double ki, double kd, int32_t error){
 
 int32_t 
 PID::calcPID(int32_t error){
-    return pidEspecif(kpr, kir, kdr, error);
+    return simplePID(kpr, kir, kdr, error);
 }
 
 int32_t 
 PID::calcPID(int32_t error, uint8_t mode){
     switch (mode){
     case ROTACIONAL:
-        return pidEspecif(kpr, kir, kdr, error);
+        return simplePID(kpr, kir, kdr, error);
     case TRANSLACIONAL:
-        return pidEspecif(kpt, kit, kdt, error);
+        return simplePID(kpt, kit, kdt, error);
 
     default:
         Serial.println("Modo não encontrado!"); break;

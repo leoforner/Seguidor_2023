@@ -130,8 +130,8 @@ void LineSensor::isValid(){
 
     for(uint8_t i = 0; i < sensorCount; i++){
         if(minimum[i] >= maximum[i]){
-            if(verb)
                 Serial.println("Erro. Refaça as medidas!");
+                printConfig();
             while(true){ // prende em um loop com o led piscando para sinalizar
                 digitalWrite(2, HIGH);
                 delay(250);
@@ -250,7 +250,7 @@ uint32_t LineSensor::readNormalized(uint8_t index){
     return value;
 }
 
-uint32_t LineSensor::searchLine(){
+double LineSensor::searchLine(){
     // calcula onde a linha esta
     double sum = 0, measuraments = 0;
     bool inLine = false;
