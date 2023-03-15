@@ -29,7 +29,7 @@ double tempo,
 
 void setup(){
     Serial.begin(115200);
-    ls.beginMultiplex(3, pinos, 15, true);
+    ls.beginMultiplex(8, 3, pinos, 15, true);
 
     //ls.setVerb(true);
 

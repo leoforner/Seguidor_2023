@@ -31,20 +31,21 @@ void LineSensor::begin(uint8_t sensorCount, uint8_t sensorPins[], bool lineWhite
     }
 }
 
-void LineSensor::beginMultiplex(uint8_t pinCount, uint8_t pinos[], uint8_t multiplexOut,  bool lineWhite){
+void LineSensor::beginMultiplex(uint8_t sensorCount, uint8_t pinsCount, uint8_t pinos[], uint8_t multiplexOut,  bool lineWhite){
     // define tamanho dos arrays de acordo com a quantidade de sensores
-    this->sensorCount = pow(2, pinCount);
-    this->pinos = new uint8_t[pinCount];
+    this->sensorCount = sensorCount;
+    this->pinos = new uint8_t[pinsCount];
     weights = new float[sensorCount];
     maximum = new uint16_t[sensorCount];
     minimum = new uint16_t[sensorCount];
 
     // configura os pinos
-    for(int i = 0; i < pinCount; i++){
+    for(int i = 0; i < pinsCount; i++){
         this->pinos[i] = pinos[i];
         pinMode(pinos[i], OUTPUT);
     }
-    this->pinsCount = pinCount;
+    pinMode(multiplexOut, INPUT);
+    this->pinsCount = pinsCount;
     this->multiplexOut = multiplexOut;
     this->lineWhite = lineWhite;
 
@@ -57,7 +58,7 @@ void LineSensor::beginMultiplex(uint8_t pinCount, uint8_t pinos[], uint8_t multi
     lineTolerance = 0.3 * line;
 
     //deixa os valores maximos e minimos diferentes de null
-    for(int i = 0; i < pow(2, pinCount); i++){
+    for(int i = 0; i < sensorCount; i++){
         maximum[i] = 0;
         minimum[i] = 4095;
         weights[i] = i; // define os pesos default 1, 2, 3...
@@ -219,13 +220,8 @@ void LineSensor::calibration(calibr mode){
 uint32_t LineSensor::read(uint8_t index){
     if(multiplex){
         // define o pino que será lido
-        int a = bitRead(index, 0);
-        int b = bitRead(index, 1);
-        int c = bitRead(index, 2);
-
-        digitalWrite(pinos[0], a);
-        digitalWrite(pinos[1], b);
-        digitalWrite(pinos[2], c);
+        for(int i = 0; i < pinsCount; i++)
+            digitalWrite(pinos[i], bitRead(index, i));
 
         return analogRead(multiplexOut);
     }else{
@@ -261,11 +257,10 @@ double LineSensor::searchLine(){
         sum += x * line * weights[i];  // soma da media multiplicado pelo peso do sensor
         measuraments += x;      // soma das medidas
         if(x > lineTolerance) 
-            inLine = true;
-            
+            inLine = true;     
     }
     if(inLine){
-        lastPosition = sum/measuraments; // media ponderada
+        lastPosition = sum/(measuraments); // media ponderada
     }else{ 
         // caso nao detecte a linha ele satura pro ultimo lado visto
         if(lastPosition < ((weights[sensorCount-1] * line)/2)){
@@ -275,6 +270,6 @@ double LineSensor::searchLine(){
         }
     }
     if(verb)
-        Serial.printf("%d \n", lastPosition);
+        Serial.printf("%.2f \n", lastPosition);
     return lastPosition;
 }

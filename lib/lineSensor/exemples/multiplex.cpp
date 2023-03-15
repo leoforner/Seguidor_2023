@@ -6,9 +6,9 @@ uint8_t pinos[3] = {5, 18, 19}, pinCount = 3; // assim tera 8 sensores
 
 void setup() {
     Serial.begin(115200);
-    ls.beginMultiplex(pinCount, pinos, 15, true);
+    ls.beginMultiplex(8, pinCount, pinos, 15, true);
     //ls.setVerb(true);
-    ls.calibration(DINAMICO);
+    ls.calibration(ESTATICO);
     ls.printConfig();
 }
 

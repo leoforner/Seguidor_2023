@@ -38,7 +38,7 @@ class LineSensor {
             seus respectivos pinos e se a linha é branca ou preta
         */
         void begin(uint8_t sensorCount, uint8_t sensorPins[], bool lineWhite);
-        void beginMultiplex(uint8_t pinCount, uint8_t pinos[], uint8_t multiplexOut, bool lineWhite);
+        void beginMultiplex(uint8_t sensorCount, uint8_t pinsCount, uint8_t pinos[], uint8_t multiplexOut, bool lineWhite);
         // caso queira mudar as medidas padrões dos calculos
         void setTrackCharacteristics(uint16_t line, uint16_t rug, uint16_t lineTolerance);
         // busca os dados do sensor
