@@ -9,7 +9,7 @@ typedef enum{
     DINAMICO
 }calibr;
 
-class LineSensor {
+class lineSensor {
     public:
         // calcula onde a linha está 
         double searchLine();

@@ -1,9 +1,9 @@
-#include "LineSensor.h"
+#include "lineSensor.h"
 #include <cstdint>
 #include <cmath>
 #include <Arduino.h>
 
-void LineSensor::begin(uint8_t sensorCount, uint8_t sensorPins[], bool lineWhite){
+void lineSensor::begin(uint8_t sensorCount, uint8_t sensorPins[], bool lineWhite){
     // define tamanho dos arrays de acordo com a quantidade de sensores
     this->sensorPins = new uint8_t[sensorCount];
     weights = new float[sensorCount];
@@ -31,7 +31,7 @@ void LineSensor::begin(uint8_t sensorCount, uint8_t sensorPins[], bool lineWhite
     }
 }
 
-void LineSensor::beginMultiplex(uint8_t sensorCount, uint8_t pinsCount, uint8_t pinos[], uint8_t multiplexOut,  bool lineWhite){
+void lineSensor::beginMultiplex(uint8_t sensorCount, uint8_t pinsCount, uint8_t pinos[], uint8_t multiplexOut,  bool lineWhite){
     // define tamanho dos arrays de acordo com a quantidade de sensores
     this->sensorCount = sensorCount;
     this->pinos = new uint8_t[pinsCount];
@@ -66,8 +66,7 @@ void LineSensor::beginMultiplex(uint8_t sensorCount, uint8_t pinsCount, uint8_t 
 }
 
 
-
-void LineSensor::printConfig(){
+void lineSensor::printConfig(){
     Serial.print("\nAs configurações do sensor são:\n");
     Serial.printf("Nº de sensores: %d \n", sensorCount);
     for(int i =0; i < sensorCount; i++){
@@ -81,24 +80,24 @@ void LineSensor::printConfig(){
     Serial.printf("Linha: %d\t Pista: %d\t Toletancia da linha: %d\n\n", line, rug, lineTolerance);
 }
 
-void LineSensor::setweights(float* weights){
+void lineSensor::setweights(float* weights){
     // altear os pesos de cada sensor
     this->weights = new float[sensorCount];
     for(int i = 0; i < sensorCount; i++)
         this->weights[i] = weights[i];
 }
 
-void LineSensor::setVerb(bool verb){
+void lineSensor::setVerb(bool verb){
     this->verb = verb;
 }
 
-void LineSensor::setTrackCharacteristics(uint16_t line, uint16_t rug, uint16_t lineTolerance){
+void lineSensor::setTrackCharacteristics(uint16_t line, uint16_t rug, uint16_t lineTolerance){
     this->line = line;
     this->rug = rug;
     this->lineTolerance = lineTolerance;
 }
 
-void LineSensor::getValues(uint16_t * array){
+void lineSensor::getValues(uint16_t * array){
     // calcula uma media de 10 medidas
     for(uint8_t i = 0; i < sensorCount; i++){
         uint32_t sum = 0;
@@ -110,7 +109,7 @@ void LineSensor::getValues(uint16_t * array){
     }
 }
 
-void LineSensor::isValid(){
+void lineSensor::isValid(){
     // caso os valores de maximos e minimos nao fazerem sentido 
     // não é possivel calcular a posição da linha
     if (verb){
@@ -143,7 +142,7 @@ void LineSensor::isValid(){
     }
 }
 
-void LineSensor::setMaxAndMinEs(){
+void lineSensor::setMaxAndMinEs(){
     // mede o quanto está lendo na parte escura da pista
     digitalWrite(2, HIGH);
     if(verb)
@@ -178,7 +177,7 @@ void LineSensor::setMaxAndMinEs(){
     isValid();
 }
 
-void LineSensor::setMaxAndMinDi(){
+void lineSensor::setMaxAndMinDi(){
     // salva os pontos maximos e minimos de cada sensor
     uint32_t start = millis();
     digitalWrite(2, HIGH);
@@ -199,7 +198,7 @@ void LineSensor::setMaxAndMinDi(){
     isValid();
 }
 
-void LineSensor::calibration(calibr mode){
+void lineSensor::calibration(calibr mode){
     if(verb)
         Serial.println("Calibração começou.");
 
@@ -217,7 +216,7 @@ void LineSensor::calibration(calibr mode){
     }
 }
 
-uint32_t LineSensor::read(uint8_t index){
+uint32_t lineSensor::read(uint8_t index){
     if(multiplex){
         // define o pino que será lido
         for(int i = 0; i < pinsCount; i++)
@@ -229,7 +228,7 @@ uint32_t LineSensor::read(uint8_t index){
     }
 }
 
-uint32_t LineSensor::readNormalized(uint8_t index){
+uint32_t lineSensor::readNormalized(uint8_t index){
     int value = read(index);
     if(!lineWhite){
         value = map(value, minimum[index], maximum[index], rug, line);
@@ -246,7 +245,7 @@ uint32_t LineSensor::readNormalized(uint8_t index){
     return value;
 }
 
-double LineSensor::searchLine(){
+double lineSensor::searchLine(){
     // calcula onde a linha esta
     double sum = 0, measuraments = 0;
     bool inLine = false;

@@ -1,8 +1,8 @@
 #include <Arduino.h>
-#include <LineSensor.h>
+#include <lineSensor.h>
 #include <PID.h>
 
-LineSensor ls;
+lineSensor ls;
 uint8_t pinos[8] = {39, 34, 35, 32, 33, 25, 26, 27};
 
 PID pid;
@@ -12,7 +12,7 @@ void setup() {
 
     // inicia a placa de sensores
     ls.begin(8, pinos, 4095);
-    ls.calibration(0);
+    ls.calibration(ESTATICO);
 
     // inicia o PID
     pid.begin(1.0, 1.0, 1.0, 4095);

@@ -1,7 +1,7 @@
 #include <Arduino.h>
-#include <LineSensor.h>
+#include <lineSensor.h>
 
-LineSensor ls;
+lineSensor ls;
 uint8_t pinos[6] = {34, 35, 32, 33, 25, 26};
 
 void setup() {

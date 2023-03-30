@@ -1,10 +1,10 @@
 #include <Arduino.h>
-#include <LineSensor.h>
+#include <lineSensor.h>
 #include <cmath>
 
 #define p2 4
 
-LineSensor ls;
+lineSensor ls;
 uint8_t pinos[3] = {5, 18, 19};
 float pesos[8]; 
 

@@ -1,7 +1,7 @@
 #include <Arduino.h>
-#include <LineSensor.h>
+#include <lineSensor.h>
 
-LineSensor ls;
+lineSensor ls;
 uint8_t pinos[3] = {5, 18, 19}, pinCount = 3; // assim tera 8 sensores
 
 void setup() {
