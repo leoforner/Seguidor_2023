@@ -4,37 +4,43 @@
 #pragma once // substitui o indef endif
 #include <cstdint>
 
+
+// use a mesma unidade de medida para todas as informações que infromar
+// de preferencia radianos e centimetros (que foi usado nos testes)
 class mathModel {
     public:
         /**
          * inicia a biblioteca com os dados do carrinho
         */
-        void begin(int8_t carVector[3][2], uint32_t actingTime);
+        void begin(double carVector[3][2], double wheelsRadius, double actingTime);
         /**
          * define o setPoint de velocidade de cada roda de 
          * acordo com a distancia do sensor em relação
          * a linha
         */
-        uint32_t* calculateSetPoints(int8_t lineDistance);
+        double* calculateSetPoints(double lineDistance);
     private:
         /**
          * cordenas X Y
+         * carVector[linhas][xy]
          * linha 0 distancia da roda esquerda
          * linha 1 distancia da roda direita
          * linha 2 distancia da linha de sensores
         */
-        int8_t carVector[3][2];
+        double carVector[3][2];
         /**
          * setPoint de velocidade de cada roda
          * linha 0 roda esquerda
          * linha 1 roda direita
+         * 
+         * raio das rodas
         */
-        uint32_t wheelsSpeed[2];
+        double wheelsSpeed[2], wheelsRadius;
         /** 
-         * velocidade angular, velocidade translacional
-         * e a velocidade tranlacional em xy do carrinho
+         * velocidade angular e velocidade translacional
+         * do carrinho
         */
-        float omegaWheels, translationalSpeed, tSpeed[2];
+        double omegaCar, translationalSpeed;
         /**
          * tempo definido para que o carrinho alcace a medida calculada
          * (vai resultar a velocidade media translacional)

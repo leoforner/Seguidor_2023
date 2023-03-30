@@ -43,11 +43,21 @@ void loop(){
     vy = cos(grausForRad(angulo)) * vel;
 
     // velocidade em XY de cada roda
+    // contando que o carrinho vai girar no centro do eixo das 
+    // rodas
     v1[0] = vx + (d1 * omega * cos(grausForRad(angulo)));
     v1[1] = vy + (d1 * omega * sin(grausForRad(angulo)));
 
     v2[0] = vx + (d2 * omega * cos(grausForRad(angulo)));
     v2[1] = vy + (d2 * omega * sin(grausForRad(angulo)));
+
+    // contando que gira no centro de massa
+    /*v1[0] = vx + (d1 * omega * cos(grausForRad(angulo))) + (dcm * omega sin(grausForRad(angulo)));
+    v1[1] = vy + (d1 * omega * sin(grausForRad(angulo))) - (dcm * omega cos(grausForRad(angulo)));
+
+    v2[0] = vx + (d2 * omega * cos(grausForRad(angulo))) + (dcm * omega sin(grausForRad(angulo)));
+    v2[1] = vy + (d2 * omega * sin(grausForRad(angulo))) - (dcm * omega cos(grausForRad(angulo)));*/
+
 
     Serial.printf("%03d\t%03d\t", tempo, (angulo));
 
