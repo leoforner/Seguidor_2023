@@ -28,12 +28,12 @@ double* mathModel::calculateSetPoints(double lineDistance){
     // calculamos a velocidade em y de cada roda
     // a componente em x nao usamos pois a roda so gira pra frente
     wheelsSpeed[0] = translationalSpeed + 
-    (carVector[0][0] * omegaCar * cos(peta)) +
-    (carVector[0][1] * omegaCar * sin(peta));
+    (carVector[0][0] * omegaCar * sin(peta)) -
+    (carVector[0][1] * omegaCar * cos(peta));
 
     wheelsSpeed[1] = translationalSpeed + 
-    (carVector[1][0] * omegaCar * cos(peta)) +
-    (carVector[1][1] * omegaCar * sin(peta));
+    (carVector[1][0] * omegaCar * sin(peta)) -
+    (carVector[1][1] * omegaCar * cos(peta));
 
     // convertemos a velocidade tangencial adquirida para omega
     wheelsSpeed[0] *= wheelsRadius;
