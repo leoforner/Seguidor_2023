@@ -36,8 +36,9 @@ double* mathModel::calculateSetPoints(double lineDistance){
     (carVector[1][1] * omegaCar * cos(peta));
 
     // convertemos a velocidade tangencial adquirida para omega
-    wheelsSpeed[0] *= wheelsRadius;
-    wheelsSpeed[1] *= wheelsRadius;
+    // *2pi = rad/s para rps
+    wheelsSpeed[0] /= wheelsRadius*2*PI;
+    wheelsSpeed[1] /= wheelsRadius*2*PI;
 
     return wheelsSpeed;
 }

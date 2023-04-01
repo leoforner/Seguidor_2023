@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <LineSensor.h>
+#include <lineSensor.h>
 #include <mathModel.h>
 
 lineSensor ls;
@@ -46,7 +46,7 @@ void loop() {
     double* wheelsSetPoint = mm.calculateSetPoints(lineDistance);
 
     // resultados
-    Serial.printf("roda esquerda: %.2fcm/s\troda direita: %.2fcm/s\ttempo: %.2fms", 
+    Serial.printf("roda esquerda: %.2frps\troda direita: %.2frps\ttempo: %.2fms", 
                                 wheelsSetPoint[0], wheelsSetPoint[1], millis() - timer);
     delay(100);
 }
