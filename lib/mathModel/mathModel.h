@@ -2,8 +2,6 @@
 // email AlisonTristao@hotmail.com
 
 #pragma once // substitui o indef endif
-#include <cstdint>
-
 
 // use a mesma unidade de medida para todas as informações que infromar
 // de preferencia radianos e centimetros (que foi usado nos testes)
@@ -19,6 +17,7 @@ class mathModel {
          * a linha
         */
         double* calculateSetPoints(double lineDistance);
+        void setVerb(bool verb);
     private:
         /**
          * cordenas X Y
@@ -45,5 +44,6 @@ class mathModel {
          * tempo definido para que o carrinho alcace a medida calculada
          * (vai resultar a velocidade media translacional)
         */
-        uint32_t actingTime;
+        double actingTime;
+        bool verb;
 };

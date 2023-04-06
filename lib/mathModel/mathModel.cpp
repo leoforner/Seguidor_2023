@@ -9,6 +9,11 @@ void mathModel::begin(double carVector[3][2], double wheelsRadius, double acting
     }
     this->wheelsRadius = wheelsRadius;
     this->actingTime = actingTime;
+    verb = false;
+}
+
+void mathModel::setVerb(bool verb){
+    this-> verb = verb;
 }
 
 double* mathModel::calculateSetPoints(double lineDistance){
@@ -20,26 +25,25 @@ double* mathModel::calculateSetPoints(double lineDistance){
     omegaCar = peta/actingTime;
     translationalSpeed = carVector[2][1]/actingTime;
 
-    /*
-        FAZER TESTES COM VELOCIDADE DA HIPOTENUSA ENTRE
-        CARVECTOR[2][1] E LINEDISTANCE
-    */
-
     // calculamos a velocidade em y de cada roda
     // a componente em x nao usamos pois a roda so gira pra frente
     wheelsSpeed[0] = translationalSpeed + 
-    (carVector[0][0] * omegaCar * sin(peta)) -
-    (carVector[0][1] * omegaCar * cos(peta));
+    + (carVector[0][0] * omegaCar * sin(abs(peta)));
+    + (carVector[0][1] * omegaCar * cos(abs(peta)));
 
     wheelsSpeed[1] = translationalSpeed + 
-    (carVector[1][0] * omegaCar * sin(peta)) -
-    (carVector[1][1] * omegaCar * cos(peta));
+    + (carVector[1][0] * omegaCar * sin(abs(peta)));
+    + (carVector[1][1] * omegaCar * cos(abs(peta)));
 
-    // convertemos a velocidade tangencial adquirida para omega
-    // *2pi = rad/s para rps
-    wheelsSpeed[0] /= wheelsRadius*2*PI;
-    wheelsSpeed[1] /= wheelsRadius*2*PI;
+    // convertemos a velocidade tangencial adquirida para omega rad/s
+    wheelsSpeed[0] /= wheelsRadius;
+    wheelsSpeed[1] /= wheelsRadius;
+
+    // converte para rps
+    wheelsSpeed[0] *= 2*PI;
+    wheelsSpeed[1] *= 2*PI;
+
+    if(verb) Serial.printf("peta: %f\tomega: %f\tVm: %f\t", peta, omegaCar, translationalSpeed);
 
     return wheelsSpeed;
 }
-
