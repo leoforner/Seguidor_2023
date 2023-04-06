@@ -34,6 +34,7 @@ void setup() {
     // printamos o resultado da calibração e configuração do sensor
     ls.printConfig();
 }
+a
 
 void loop() {
     uint32_t timer = 0;
