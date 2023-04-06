@@ -49,12 +49,3 @@ void loop() {
                                 lineDistance, wheelsSetPoint[0], wheelsSetPoint[1], millis() - timer);
     delay(100);
 }
-
-
-
-
-
-
-
-
-
