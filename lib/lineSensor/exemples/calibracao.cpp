@@ -2,11 +2,12 @@
 #include <lineSensor.h>
 
 lineSensor ls;
-uint8_t pinos[6] = {34, 35, 32, 33, 25, 26};
+uint8_t pinos[6] = {34, 35, 32, 33, 25, 26},
+        pinCount = 6;
 
 void setup() {
     Serial.begin(115200);
-    ls.begin(6, pinos, true);
+    ls.begin(pinCount, pinos, true);
     //ls.setVerb(true);
     ls.calibration(ESTATICO);
     ls.printConfig();

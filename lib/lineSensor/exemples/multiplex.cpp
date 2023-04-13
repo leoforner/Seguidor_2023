@@ -2,11 +2,23 @@
 #include <lineSensor.h>
 
 lineSensor ls;
-uint8_t pinos[3] = {5, 18, 19}, pinCount = 3; // assim tera 8 sensores
+uint8_t pinsOut[3] = {5, 18, 19}, 
+        pinMult = 3, 
+        pinCount = 8, // assim tera até 8 sensores
+        pinIn = 15;
+/*
+    Caso vá usar menos sensores do que o multiplex permite 
+    apenas troque pinCount para a quantidade que vai usar 
+    e entao o multiplex irá ler somente até o index da qtd
+    forncecida.
+
+    ex: se deixar com 6 sensores o multiplex irá somente até ]
+    o index 5
+*/
 
 void setup() {
     Serial.begin(115200);
-    ls.beginMultiplex(8, pinCount, pinos, 15, true);
+    ls.beginMultiplex(pinCount, pinMult, pinsOut, pinIn, true);
     //ls.setVerb(true);
     ls.calibration(ESTATICO);
     ls.printConfig();
