@@ -203,10 +203,10 @@ void lineSensor::calibration(calibr mode){
         Serial.println("Calibração começou.");
 
     switch (mode){
-    case ESTATICO:
+    case STATIC:
         setMaxAndMinEs();
         break;
-    case DINAMICO:
+    case DYNAMIC:
         setMaxAndMinDi();
         break;
 

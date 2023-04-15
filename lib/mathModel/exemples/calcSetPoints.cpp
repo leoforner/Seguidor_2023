@@ -28,7 +28,7 @@ void setup() {
     ls.setTrackCharacteristics(100, 0, 30);
 
     // calibramos o sensor
-    ls.calibration(ESTATICO);
+    ls.calibration(STATIC);
 
     // printamos o resultado da calibração e configuração do sensor
     ls.printConfig();

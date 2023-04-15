@@ -5,8 +5,8 @@
 #include <cstdint>
 
 typedef enum{
-    ESTATICO,
-    DINAMICO
+    STATIC,
+    DYNAMIC
 }calibr;
 
 class lineSensor {

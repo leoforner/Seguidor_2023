@@ -9,7 +9,7 @@ void setup() {
     Serial.begin(115200);
     ls.begin(pinCount, pinos, true);
     //ls.setVerb(true);
-    ls.calibration(ESTATICO);
+    ls.calibration(STATIC);
     ls.printConfig();
 }
 
