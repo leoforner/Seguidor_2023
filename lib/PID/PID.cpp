@@ -83,7 +83,7 @@ PID::simplePID(double kp, double ki, double kd, int32_t error){
     // garante que a integral nao sature
     if((I >= limit) && (error >= 0)){
         I = limit;
-    }else if((I <= -limit/2) && (error <= 0)){
+    }else if((I <= -limit) && (error <= 0)){
         I = -limit;
     }else{
         sumError += error;
@@ -127,7 +127,7 @@ PID::simplePI(double kp, double ki, int32_t error){
     // garante que a integral nao sature
     if((I >= limit) && (error >= 0)){
         I = limit;
-    }else if((I <= -limit/2) && (error <= 0)){
+    }else if((I <= -limit) && (error <= 0)){
         I = -limit;
     }else{
         sumError += error;
