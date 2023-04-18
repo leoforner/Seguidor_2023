@@ -205,7 +205,8 @@ PID::calcPID(int32_t error, uint8_t mode){
         return simplePID(kpt, kit, kdt, error);
 
     default:
-        Serial.println("Modo não encontrado!"); break;
+        Serial.println("Modo não encontrado!"); 
+        return 0;
     }
 }
 

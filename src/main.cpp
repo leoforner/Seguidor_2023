@@ -1,10 +1,7 @@
 #include <Arduino.h>
-#include <lineSensor.h>
-#include <mathModel.h>
-#include <PID.h>
 
 void setup() {
-
+    Serial.begin(115200);
 }
 
 void loop() {
