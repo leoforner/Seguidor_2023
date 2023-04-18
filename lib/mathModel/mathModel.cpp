@@ -27,21 +27,18 @@ double* mathModel::calculateSetPoints(double lineDistance){
 
     // calculamos a velocidade em y de cada roda
     // a componente em x nao usamos pois a roda so gira pra frente
-    wheelsSpeed[0] = translationalSpeed + 
+    wheelsSpeed[0] = translationalSpeed 
     + (carVector[0][0] * omegaCar * sin(abs(peta)))
     + (carVector[0][1] * omegaCar * cos(abs(peta)));
 
-    wheelsSpeed[1] = translationalSpeed + 
+    wheelsSpeed[1] = translationalSpeed
     + (carVector[1][0] * omegaCar * sin(abs(peta)))
     - (carVector[1][1] * omegaCar * cos(abs(peta)));
 
     // convertemos a velocidade tangencial adquirida para omega rad/s
-    wheelsSpeed[0] /= wheelsRadius;
-    wheelsSpeed[1] /= wheelsRadius;
-
-    // converte para rps
-    wheelsSpeed[0] *= 2*PI;
-    wheelsSpeed[1] *= 2*PI;
+    // e depois para rps
+    wheelsSpeed[0] /= wheelsRadius*2*PI;
+    wheelsSpeed[1] /= wheelsRadius*2*PI;
 
     if(verb) Serial.printf("peta: %f\tomega: %f\tVm: %f\t", peta, omegaCar, translationalSpeed);
 

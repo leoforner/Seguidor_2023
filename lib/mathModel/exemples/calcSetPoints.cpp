@@ -35,17 +35,17 @@ void setup() {
 }
 
 void loop() {
-    uint32_t timer = 0;
-    timer = millis(); // salva o tempo
-
     // distancia entre o sensor e a linha em cm
     double lineDistance = (ls.searchLine()/100.0) - 5.70/2.0;
 
+    uint32_t timer = 0;
+    timer = micros(); // salva o tempo
+    
     // calcula o setPoint de cada roda em cm/s
     double* wheelsSetPoint = mm.calculateSetPoints(lineDistance);
 
     // resultados
-    Serial.printf("erro: %.2f\tr1: %.3frps\tr2: %.3frps\ttempo: %.2fms\n", 
-                                lineDistance, wheelsSetPoint[0], wheelsSetPoint[1], millis() - timer);
+    Serial.printf("erro: %.2f\tr1: %.3frps\tr2: %.3frps\ttempo: %d micros\n", 
+                                lineDistance, wheelsSetPoint[0], wheelsSetPoint[1], micros() - timer);
     delay(100);
 }
