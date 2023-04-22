@@ -1,51 +1,37 @@
 #include <Arduino.h>
-#include <lineSensor.h>
-#include <mathModel.h>
 
-lineSensor ls;
-uint8_t pinos[8] = {34, 35, 32, 33, 25, 26, 27, 14}, pinsCount = 8;
-float pesos[8];
+#define in 12
+#define out 33
 
-mathModel mm;               // X    Y
-double carVector[3][2] =   {{-3.5, -2.0},    // roda direita
-                            {+3.5, -2.0},    // roda esquerda
-                            {+0.0, +8.0}};   // linha de sensores
-double wheelsRadius = 2.0, actingTime = 0.5;
-
-void setup() {
+void setup(){
     Serial.begin(115200);
-    ls.begin(pinsCount, pinos, true);
-    mm.begin(carVector, wheelsRadius, actingTime);
+    pinMode(in, INPUT);
+    pinMode(out, OUTPUT);
 
-    // a linha tem 5.7 centimetros com 8 sensores
-    for(int i = 0; i < 8; i++)
-        pesos[i] = i * 5.7/7; 
-    // altera o peso padrao para calcular a distancia da linha
-    ls.setweights(pesos);
-
-    // dessa forma a saida esta em nanometro
-    // divindo por 100 a medida passa para centimetros
-    ls.setTrackCharacteristics(100, 0, 30);
-
-    // calibramos o sensor
-    ls.calibration(STATIC);
-
-    // printamos o resultado da calibração e configuração do sensor
-    ls.printConfig();
+    ledcSetup(0, 5000, 12); // canal para esquerdo
+    ledcAttachPin(out, 0);
 }
 
-void loop() {
-    // distancia entre o sensor e a linha em cm
-    double lineDistance = (ls.searchLine()/100.0) - 5.70/2.0;
+void loop(){
+    double leitura = 0;
 
-    uint32_t timer = 0;
-    timer = micros(); // salva o tempo
+    /* TESTES
     
-    // calcula o setPoint de cada roda em cm/s
-    double* wheelsSetPoint = mm.calculateSetPoints(lineDistance);
+    ledcWrite(0, 1500);
 
-    // resultados
-    Serial.printf("erro: %.2f\tr1: %.3frps\tr2: %.3frps\ttempo: %d micros\n", 
-                                lineDistance, wheelsSetPoint[0], wheelsSetPoint[1], micros() - timer);
+    // calcula a media de 100 mmedidas
+    for(int i =0; i < 100; i++){
+        leitura += analogRead(in);
+        delay(10);
+    } leitura /= 100;
+
+    leitura = pow(leitura, 2) * 0.000038 + 1.044 * leitura + 127;
+
+    Serial.print(leitura);
+    Serial.print(" - ");
+    
+    leitura = (leitura * 3)/3850;
+    Serial.println(leitura);/*/
+
     delay(100);
 }
