@@ -4,7 +4,7 @@
 #define out 12
 
 double x[300]; 
-double t[600];
+double t[300];
 char buf[100];
 int order = 3; // polinomio de ordem 3
 
@@ -21,10 +21,10 @@ void loop() {
     double leitura = 0;
     // descarrega o capacitor
     ledcWrite(0, 100);
-    delay(1000);
+    delay(2000);
 
     // calcula o erro subindo
-    for(int j = 100; j < 300; j++){
+    for(int j = 0; j < 300; j++){
         // aumenta de 10 em 10 o valor analogico
         leitura = 0;
         ledcWrite(0, j*10);
@@ -35,13 +35,18 @@ void loop() {
             leitura += analogRead(in);
             delayMicroseconds(20);
         } leitura /= 100.0;
-        
-        // copie os dados printados e cole em csv para plotar no excel com separador ';'
-        Serial.printf("out =;%d;in =;%.f\n", (j*10), leitura);
 
-        // salva os dados
-        x[j] = j*10;
-        t[j] = leitura;
+        // retira a parte ruim
+        if(j >= 100){
+            // copie os dados printados e cole em csv para plotar no excel com separador ';'
+            Serial.printf("out =;%d;in =;%.f\n", (j*10), leitura);
+
+            // salva os dados
+            x[j-100] = j*10;
+            t[j-100] = leitura;
+        }else{
+            Serial.println("espere...");
+        }
     }
 
     // calcula o erro descendo 
