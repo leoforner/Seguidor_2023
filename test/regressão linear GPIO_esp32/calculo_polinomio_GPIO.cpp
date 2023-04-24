@@ -23,7 +23,7 @@ void loop() {
     ledcWrite(0, 0);
     delay(2000);
 
-    // calcula o erro subindo
+    // calcula o erro subindo (usamos apenas de 100 a 300)
     for(int j = 0; j < 300; j++){
         // aumenta de 10 em 10 o valor analogico
         leitura = 0;
