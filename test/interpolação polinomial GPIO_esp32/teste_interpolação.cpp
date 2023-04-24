@@ -43,6 +43,6 @@ void loop() {
 
     // a melhor precisao esta entre 1.0 e 2.4v
 
-    Serial.printf("saida: %.2f\tentrada: %d\t regressão: %.0f\treal: %.2f\n", leitura, entrada, reg, tensaoV);
+    Serial.printf("saida: %.2f\tentrada: %d\t interpolação: %.0f\treal: %.2f\n", leitura, entrada, reg, tensaoV);
     delay(100);
 }
