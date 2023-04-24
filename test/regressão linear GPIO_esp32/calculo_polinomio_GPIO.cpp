@@ -20,7 +20,7 @@ void setup() {
 void loop() {
     double leitura = 0;
     // descarrega o capacitor
-    ledcWrite(0, 100);
+    ledcWrite(0, 0);
     delay(2000);
 
     // calcula o erro subindo
