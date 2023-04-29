@@ -1,55 +1,38 @@
 #include <Arduino.h>
+#define in 12
+#define out 27
 
-#define out 12
-#define in 33
-#define pot 35
-
-float interpolacaoLinear(float analog, float vMin, float vMax,
-                float adc_min, float adc_max) {
-  return vMin +
-         (analog - adc_min) * (vMax - vMin) / (adc_max - adc_min);
-}
-
-float analogicoParaTensao(float analog) {
-  if (analog < 22)
-    return interpolacaoLinear(analog, 0.0, 0.17, 0, 22);
-  else if (analog >= 22 && analog < 1832)
-    return interpolacaoLinear(analog, 0.17, 1.66, 22, 1832);
-  else if (analog >= 1832 && analog < 3138)
-    return interpolacaoLinear(analog, 1.66, 2.69, 1832, 3138);
-  else if (analog >= 3138 && analog < 4095)
-    return interpolacaoLinear(analog, 2.69, 3.12, 3138, 4095);
-  else
-    return 3.2;
-}
+double leituraAnalogica;
+int sinalAnalogico, degraus = 16;
 
 void setup() {
-    Serial.begin(115200);
-    pinMode(out, OUTPUT);
-    pinMode(pot, OUTPUT);
-    pinMode(in, INPUT);
-
-    ledcSetup(0, 5000, 12); 
-    ledcAttachPin(out, 0);
+  Serial.begin(115200);
+  pinMode(in, INPUT);
+  pinMode(out, OUTPUT);
+      
+  ledcSetup(0, 1.0e5, 12); 
+  ledcAttachPin(out, 0);
 }
 
 void loop() {
-    // le o potenciometro
-    int potenciometro = analogRead(pot);
-    // converte o potenciometro para tensao
-    float leitura = (potenciometro*3.28)/4095;
-    // calcula qual o sinal analogico correspondente para a entrada
-    float saida = (leitura*4095)/3.28;
+  // descarrega o capacitor
+  ledcWrite(0, 0);
+  delay(500);
 
-    ledcWrite(0, saida);
+  // aplica degruas na porta analogica
+  for(float tensaoAplicada = 0.0; tensaoAplicada < 3.27; tensaoAplicada += (3.27/degraus)){
+    // aumenta de a tensao
+    sinalAnalogico = (tensaoAplicada*4095)/3.27;
+    ledcWrite(0, sinalAnalogico);
 
-    float avg = 0;
-    for (int i = 0; i < 10; i++) {
-        avg += analogRead(in);
-        delay(10);
-    }
-    avg /= (1.0 * 10);
+      // calcula a media de 100 mmedidas
+    for(int i = 0; i < 100; i++){
+        leituraAnalogica += analogRead(in);
+    } leituraAnalogica /= 100.0;
 
-    Serial.println(analogicoParaTensao(avg));
-    delay(100);
+    Serial.printf("%.2f;%.0f\n", tensaoAplicada, leituraAnalogica);
+
+    // zera a variavel para o proximo loop
+    leituraAnalogica = 0; 
+  }
 }
