@@ -15,9 +15,9 @@ void setup() {
 }
 
 void loop() {
-  for(double tensaoAplicada = 0.0; tensaoAplicada <= 3.27; tensaoAplicada += (3.37/32)){
+  for(double tensaoAplicada = 0.0; tensaoAplicada <= 3.27; tensaoAplicada += (3.27/32)){
     // converte a tensão para um sinal analogico
-    sinalAnalogico = (tensaoAplicada*4095)/3.37;
+    sinalAnalogico = (tensaoAplicada*4095)/3.27;
     ledcWrite(0, sinalAnalogico);
     delay(500);
 
