@@ -48,7 +48,7 @@ void loop() {
         avg += analogRead(in);
         delay(10);
     }
-    avg /= (1.0 * 10);
+    avg /= 10.0;
 
     Serial.println(analogicoParaTensao(avg));
     delay(100);
