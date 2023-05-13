@@ -1,14 +1,14 @@
 #include <Arduino.h>
-#include <LineSensor.h>
+#include <lineSensor.h>
 
-LineSensor ls;
-uint8_t pinos[8] = {39, 34, 35, 32, 33, 25, 26, 27};
+uint8_t pinos[6] = {34, 35, 32, 33, 25, 26}, pinCount = 6;
+lineSensor ls(pinCount, pinos, true);
 
 void setup() {
     Serial.begin(115200);
-    ls.begin(pinos, true);
+    ls.begin();
     //ls.setVerb(true);
-    ls.calibration(ESTATICO);
+    ls.calibration(STATIC);
     ls.printConfig();
 }
 

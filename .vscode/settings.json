@@ -9,6 +9,7 @@
         "string_view": "cpp",
         "initializer_list": "cpp",
         "cstdint": "cpp",
+<<<<<<< HEAD
         "*.tcc": "cpp",
         "cmath": "cpp",
         "optional": "cpp",
@@ -20,4 +21,15 @@
         "type_traits": "cpp",
         "utility": "cpp"
     }
+=======
+        "*.tcc": "cpp"
+    },
+    "idf.port": "/dev/ttyUSB0",
+    "idf.adapterTargetName": "esp32",
+    "idf.openOcdConfigs": [
+        "interface/ftdi/esp32_devkitj_v1.cfg",
+        "target/esp32.cfg"
+    ],
+    "idf.flashType": "JTAG"
+>>>>>>> develop
 }
