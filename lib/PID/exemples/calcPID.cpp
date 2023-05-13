@@ -2,23 +2,21 @@
 #include <lineSensor.h>
 #include <PID.h>
 
-lineSensor ls;
 uint8_t pinos[8] = {34, 35, 32, 33, 25, 26, 27, 14};
+lineSensor ls(8, pinos, true);
 
-PID pid;
+PID pid(1.0, 1.0, 1.0, 4095);
 
 void setup() {
     Serial.begin(115200);
 
     // inicia a placa de sensores
-    ls.begin(8, pinos, true);
+    ls.begin();
     ls.calibration(STATIC);
 
     // inicia o PID
-    pid.begin(1.0, 1.0, 1.0, 4095);
+    pid.begin();
     // pode definir variaveis para 2 PIDs
-    //pid.begin(1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 4095);
-    //pid.setVerb(true);
     pid.printConfig();
 }
 

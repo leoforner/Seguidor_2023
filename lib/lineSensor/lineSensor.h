@@ -66,7 +66,7 @@ class lineSensor {
         // peso de cada sensor
         float* weights;
         // quantidade e pinos sensores e o pino do led
-        uint8_t* sensorPins, led;
+        uint8_t* sensorPins, led = 2;
         // valor do branco, do preto e o quanto ainda é considerado branco 
         uint16_t line, rug, lineTolerance;
         // pinos do multiplexador
