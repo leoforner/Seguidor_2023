@@ -11,6 +11,11 @@ typedef enum{
 
 class lineSensor {
     public:
+        // construtor 
+        lineSensor(uint8_t sensorCount, uint8_t sensorPins[], bool lineWhite);
+        lineSensor(uint8_t sensorCount, uint8_t pinsCount, uint8_t pinos[], uint8_t multiplexOut, bool lineWhite);
+        ~lineSensor();
+        void setLed(uint8_t led);
         // calcula onde a linha está 
         double searchLine();
         /**
@@ -34,11 +39,10 @@ class lineSensor {
         */
         uint32_t readNormalized(uint8_t index);
         /*  
-            inicia o sensor frontal dizendo quantos sensores ele possui,
-            seus respectivos pinos e se a linha é branca ou preta
+            inicia o sensor frontal
         */
-        void begin(uint8_t sensorCount, uint8_t sensorPins[], bool lineWhite);
-        void beginMultiplex(uint8_t sensorCount, uint8_t pinsCount, uint8_t pinos[], uint8_t multiplexOut, bool lineWhite);
+        void begin();
+        void beginMultiplex();
         // caso queira mudar as medidas padrões dos calculos
         void setTrackCharacteristics(uint16_t line, uint16_t rug, uint16_t lineTolerance);
         // busca os dados do sensor
@@ -61,8 +65,8 @@ class lineSensor {
         uint16_t* maximum,* minimum;
         // peso de cada sensor
         float* weights;
-        // quantidade e pinos sensores
-        uint8_t* sensorPins;
+        // quantidade e pinos sensores e o pino do led
+        uint8_t* sensorPins, led;
         // valor do branco, do preto e o quanto ainda é considerado branco 
         uint16_t line, rug, lineTolerance;
         // pinos do multiplexador

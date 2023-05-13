@@ -1,11 +1,12 @@
 #include <Arduino.h>
 #include <lineSensor.h>
 
-lineSensor ls;
 uint8_t pinsOut[3] = {5, 18, 19}, 
         pinMult = 3, 
         pinCount = 8, // assim tera até 8 sensores
         pinIn = 15;
+lineSensor ls(pinCount, pinMult, pinsOut, pinIn, true);
+
 /*
     Caso vá usar menos sensores do que o multiplex permite 
     apenas troque pinCount para a quantidade que vai usar 
@@ -18,7 +19,7 @@ uint8_t pinsOut[3] = {5, 18, 19},
 
 void setup() {
     Serial.begin(115200);
-    ls.beginMultiplex(pinCount, pinMult, pinsOut, pinIn, true);
+    ls.beginMultiplex();
     //ls.setVerb(true);
     ls.calibration(STATIC);
     ls.printConfig();
