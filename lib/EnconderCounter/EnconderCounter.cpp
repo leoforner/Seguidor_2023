@@ -40,32 +40,36 @@ EnconderCounter::EnconderCounter(int GPIO_PINO, pcnt_unit_t COUNTER_UNIT, unsign
 
 }
   
-  EnconderCounter::~EnconderCounter(){}
- void IRAM_ATTR EnconderCounter::pcnt_isr_handler(void *arg){}
- 
-  unsigned long EnconderCounter:: getRPM(unsigned long pastTime)
-  {
-    unsigned long rpm =  getRPS(pastTime) * 60;
-    return rpm;
-  }
-  double EnconderCounter:: getRPS(unsigned long pastTime)
-  {
- 
+EnconderCounter::~EnconderCounter(){}
+void IRAM_ATTR EnconderCounter::pcnt_isr_handler(void *arg){}
+
+unsigned long EnconderCounter:: getRPM(unsigned long pastTime)
+{
+  unsigned long rpm =  getRPS(pastTime) * 60;
+  return rpm;
+}
+double EnconderCounter:: getRPS(unsigned long pastTime)
+{
+
+pcnt_get_counter_value(PCNT_UNIT_0, &PULSES);
+//Serial.print("counterValue: ");
+Serial.println(PULSES);
+unsigned long timeInterval = micros() - pastTime;
+if(timeInterval <= 0)
+{
+  Serial.println("Time interval is <= 0");
+  return 0;
+}
+else{
+  //Serial.printf("timeI Interval %d \n", timeInterval);
+  //Serial.printf("pulse cast %d \n", PULSES);
+  //Serial.print("RPS: ");
+  double t = ((PULSES*1.0) /(PULSE_FOR_REVOLUTION*1.0)) / (timeInterval/1e6);
+  // Serial.printf("RPS %f \n", t);
+  return t;
+}
+}
+int16_t EnconderCounter::getPulses(){
   pcnt_get_counter_value(PCNT_UNIT_0, &PULSES);
-  //Serial.print("counterValue: ");
-  Serial.println(PULSES);
-  unsigned long timeInterval = micros() - pastTime;
-  if(timeInterval <= 0)
-  {
-    Serial.println("Time interval is <= 0");
-    return 0;
-  }
-  else{
-    //Serial.printf("timeI Interval %d \n", timeInterval);
-    //Serial.printf("pulse cast %d \n", PULSES);
-    //Serial.print("RPS: ");
-    double t = ((PULSES*1.0) /(PULSE_FOR_REVOLUTION*1.0)) / (timeInterval/1e6);
-   // Serial.printf("RPS %f \n", t);
-    return t;
-  }
-  }
+  return PULSES;
+}
