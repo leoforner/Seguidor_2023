@@ -14,5 +14,6 @@ void setup() {
 }
 
 void loop() {
-    
+    Serial.println(encoder.getPulses());
+    delay(100);
 }
