@@ -4,14 +4,19 @@
 #include "PID.h"
 #include <Arduino.h>
 
-PID::PID(double kpr, double kir, double kdr, int limit){
+void
+PID::begin(double kpr, double kir, double kdr, int limit){
     this->kpr = kpr; 
     this->kir = kir; 
     this->kdr = kdr; 
     this->limit = limit;
+    verb = false;
+    lastTime = 0;
+    sumError = 0;
 }
-    
-PID::PID(double kpr, double kir, double kdr,
+
+void
+PID::begin(double kpr, double kir, double kdr,
             double kpt, double kit, double kdt, int limit){
     this->kpr = kpr; 
     this->kir = kir; 
@@ -20,21 +25,20 @@ PID::PID(double kpr, double kir, double kdr,
     this->kit = kit; 
     this->kdt = kdt; 
     this->limit = limit;
-}
-
-void PID::begin(){
     verb = false;
     lastTime = 0;
     sumError = 0;
 }
 
-void PID::setConst(double kpr, double kir, double kdr){
+void
+PID::setConst(double kpr, double kir, double kdr){
     this->kpr = kpr; 
     this->kir = kir; 
     this->kdr = kdr; 
 }
 
-void PID::setConst(double kpr, double kir, double kdr,
+void
+PID::setConst(double kpr, double kir, double kdr,
             double kpt, double kit, double kdt){
     this->kpr = kpr; 
     this->kir = kir; 
@@ -44,21 +48,25 @@ void PID::setConst(double kpr, double kir, double kdr,
     this->kdt = kdt; 
 }
 
-void PID::setLimit(int limit){
+void
+PID::setLimit(int limit){
     this->limit = limit; 
 }
 
-void PID::setVerb(bool verb){
+void
+PID::setVerb(bool verb){
     this->verb = verb; 
 }
 
-void PID::printConfig(){
+void
+PID::printConfig(){
     Serial.printf("Constantes rotacionais: \n kp = %f\n ki = %f \n kd = %f \n\n", kdr, kir, kdr);
     Serial.printf("Constantes translacionais: \n kp = %f\n ki = %f \n kd = %f \n\n", kdt, kit, kdt);
     Serial.printf("Velocidade: %d \n\n", limit);
 }
 
-int32_t PID::simplePID(double kp, double ki, double kd, int32_t error){
+int32_t
+PID::simplePID(double kp, double ki, double kd, int32_t error){
     // calcula quanto tempo passou desde o ultimo calculo
     float t = (millis() - lastTime)/1000.0;
     lastTime = millis();
@@ -104,7 +112,8 @@ int32_t PID::simplePID(double kp, double ki, double kd, int32_t error){
     return PID;
 }
 
-int32_t PID::simplePI(double kp, double ki, int32_t error){
+int32_t
+PID::simplePI(double kp, double ki, int32_t error){
     // calcula quanto tempo passou desde o ultimo calculo
     float t = (millis() - lastTime)/1000.0;
     lastTime = millis();
@@ -147,7 +156,8 @@ int32_t PID::simplePI(double kp, double ki, int32_t error){
     return PI_;
 }
 
-int32_t PID::simplePD(double kp, double kd, int32_t error){
+int32_t
+PID::simplePD(double kp, double kd, int32_t error){
     // calcula quanto tempo passou desde o ultimo calculo
     float t = (millis() - lastTime)/1000.0;
     lastTime = millis();
@@ -181,11 +191,13 @@ int32_t PID::simplePD(double kp, double kd, int32_t error){
     return P_D;
 }
 
-int32_t PID::calcPID(int32_t error){
+int32_t 
+PID::calcPID(int32_t error){
     return simplePID(kpr, kir, kdr, error);
 }
 
-int32_t PID::calcPID(int32_t error, uint8_t mode){
+int32_t 
+PID::calcPID(int32_t error, uint8_t mode){
     switch (mode){
     case ROTACIONAL:
         return simplePID(kpr, kir, kdr, error);

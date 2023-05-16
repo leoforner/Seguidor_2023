@@ -4,6 +4,7 @@
 #define p1 15
 #define p2 4
 
+
 const double pi = cos(-1);
 double tempo, 
        omega,

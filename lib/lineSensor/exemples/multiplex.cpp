@@ -19,7 +19,6 @@ lineSensor ls(pinCount, pinMult, pinsOut, pinIn, true);
 
 void setup() {
     Serial.begin(115200);
-    ls.setLed(2);
     ls.beginMultiplex();
     //ls.setVerb(true);
     ls.calibration(STATIC);

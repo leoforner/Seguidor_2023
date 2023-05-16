@@ -6,14 +6,12 @@
 #include <Arduino.h>
 
 class PID{
-    public: 
-        //construtor
-        PID(double kpr, double kir, double kdr, int limit);
-        PID(double kpr, double kir, double kdr,
+    public:
+        // inicia as constantes apenas rotacionais
+        void begin(double kpr, double kir, double kdr, int limit);
+        // inicia com constantes tambem translacionais
+        void begin(double kpr, double kir, double kdr,
                     double kpt, double kit, double kdt, int limit);
-        ~PID();
-        // inicia lib
-        void begin();
         // atualiza as constantes rotacionais
         void setConst(double kpr, double kir, double kdr);
         // atualiza todas constantes

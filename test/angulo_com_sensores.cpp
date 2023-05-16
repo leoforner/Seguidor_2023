@@ -4,9 +4,9 @@
 
 #define p2 4
 
+lineSensor ls;
 uint8_t pinos[3] = {5, 18, 19};
 float pesos[8]; 
-lineSensor ls(8, 3, pinos, 15, true);
 
 double tempo, 
        omega,
@@ -29,7 +29,7 @@ double tempo,
 
 void setup(){
     Serial.begin(115200);
-    ls.beginMultiplex();
+    ls.beginMultiplex(8, 3, pinos, 15, true);
 
     //ls.setVerb(true);
 
@@ -40,7 +40,7 @@ void setup(){
     ls.setweights(pesos);
 
     ls.setTrackCharacteristics(100, 0, 30);
-    ls.calibration(STATIC);
+    ls.calibration(ESTATICO);
     ls.printConfig();
 }
 
