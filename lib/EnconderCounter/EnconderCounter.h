@@ -19,5 +19,4 @@ public:
 //Functions
 unsigned long getRPM(unsigned long pastTime); // GET ROTATION PER MINUTE
 double getRPS(unsigned long pastTime); //get ROTATION PER SECOND
-int16_t getPulses();
 };
