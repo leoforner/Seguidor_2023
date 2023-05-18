@@ -6,7 +6,6 @@
 EnconderCounter::EnconderCounter(int GPIO_PINO, pcnt_unit_t COUNTER_UNIT, unsigned long pulseForRevolution, uint16_t filterTime){
     this->PULSE_FOR_REVOLUTION = pulseForRevolution;
     this->COUNTER_UNIT = COUNTER_UNIT;
-    this->timeInterval = timeInterval;
     this->filterTime = filterTime;
       // Código da tarefa
       pcnt_config_t pcnt_config = {
@@ -14,7 +13,7 @@ EnconderCounter::EnconderCounter(int GPIO_PINO, pcnt_unit_t COUNTER_UNIT, unsign
       .lctrl_mode = PCNT_MODE_REVERSE,
       .hctrl_mode = PCNT_MODE_KEEP,
       .pos_mode = PCNT_COUNT_INC,
-      .neg_mode = PCNT_COUNT_DIS,
+      .neg_mode = PCNT_COUNT_INC,
       .counter_h_lim =  32767,
       .counter_l_lim = -32768,
       .unit = COUNTER_UNIT,
@@ -46,9 +45,9 @@ Serial.begin(115200);
 EnconderCounter::~EnconderCounter(){}
 void IRAM_ATTR EnconderCounter::pcnt_isr_handler(void *arg){}
 
-double EnconderCounter:: getRPM(unsigned long pastTime)
+double EnconderCounter:: getRPM()
 {
-  double rpm =  getRPS(pastTime) * 60;
+  double rpm =  getRPS() * 60;
   return rpm;
 }
 uint16_t EnconderCounter:: convert_microsec_to_APB(uint16_t time)  
@@ -58,35 +57,43 @@ uint16_t EnconderCounter:: convert_microsec_to_APB(uint16_t time)
  if(v>1023) v = 1023; //o valor máximo v é 1023 pois filter_val é um valor de 10-bit (1.27ms)
   return v;
 }  
-double EnconderCounter:: getRPS(unsigned long pastTime)
+double EnconderCounter:: getRPS()
 {
-
+uint32_t now = micros();
+uint32_t timeInterval = now - pastTime;
 pcnt_get_counter_value(COUNTER_UNIT, &PULSES);
-//Serial.print("counterValue: ");
-//Serial.println(PULSES);
-unsigned long timeInterval = micros() - pastTime;
-if(timeInterval <= 0)
-{
-  Serial.println("Time interval is <= 0");
-  return 0;
-}
-else{
-  //Serial.printf("timeI Interval %d \n", timeInterval);
-  //Serial.printf("pulses %d \n", PULSES);
-  //Serial.print("RPS: ");
-  pcnt_counter_pause(COUNTER_UNIT);
-  pcnt_counter_clear(COUNTER_UNIT);
-  pcnt_counter_resume(COUNTER_UNIT);
-  double t = ((PULSES*1.0) /(PULSE_FOR_REVOLUTION*1.0)) / (timeInterval/1e6);
-   //Serial.printf("RPS %f \n", t);
-  return t;
-}
-}
+//Serial.printf("Pulses: %d \n", PULSES);
+
+  if(PULSES <=0)
+  {
+    //PULSES = oldPulses;
+  //  Serial.print("Pulses was equal ");
+   // Serial.println(oldPulses);
+     //Serial.printf("Pulses is %d now \n", PULSES);
+     return currentVelocity;
+  }
+  else if (timeInterval <= 0){
+    //Serial.println("Time interval is equal 0");
+    return currentVelocity;
+    }
+  else{
+    currentVelocity = ((PULSES*1.0) /(PULSE_FOR_REVOLUTION*1.0)) / (timeInterval/1e6);
+    pastTime = micros();
+    pcnt_counter_pause(COUNTER_UNIT);
+    pcnt_counter_clear(COUNTER_UNIT);
+    pcnt_counter_resume(COUNTER_UNIT);
+    //Serial.printf("RPS %f \n", t);
+    return currentVelocity;
+    }
+} 
+
+
+
 int16_t EnconderCounter::getPulses(){
   pcnt_get_counter_value(COUNTER_UNIT, &PULSES);
   return PULSES;
 }
-double EnconderCounter:: getRadiansVelocity(unsigned long pastTime) 
+double EnconderCounter:: getRadiansVelocity() 
 {
-  return getRPS(pastTime) * 2 * PI;
+  return getRPS() * 2 * PI;
 }
