@@ -47,12 +47,16 @@ bool dale = false;
 void loop() {
     // aplicar pwm duarante tempo determinado
     for(int i = 0; i < 200; i++){
+      // le a tensao da bateria
         float x = analogRead(in);
         x = (analogicoParaTensao(x))*4.03;
         float saida = (4.0*4095)/x;
 
+        // apllica o pwm correspondente
         ledcWrite(0, saida);
         ledcWrite(1, saida);
+
+        // salva a velocidade  
         medidas[i] = encoder.getRPS();
         delay(10);
         Serial.println(x);
@@ -61,6 +65,7 @@ void loop() {
     ledcWrite(0, 0);
     ledcWrite(1, 0);
 
+    // printa o resultado
     while(dale){
       Serial.println("-");
         for(int i = 0; i < 200; i++){
