@@ -35,7 +35,7 @@ Serial.begin(115200);
   //uint16_t t = 1000;//convert_microsec_to_APB();
   //Serial.print("APB cycles: " );
   //Serial.println(t);
-  pcnt_set_filter_value(COUNTER_UNIT, 1023); // o segundo argumento é a quantidade de pulsos do APB clock( frequencia do bus do esp), então o tempo é relativo a frequência do bus
+  pcnt_set_filter_value(COUNTER_UNIT, 36); // o segundo argumento é a quantidade de pulsos do APB clock( frequencia do bus do esp), então o tempo é relativo a frequência do bus
   pcnt_filter_enable(COUNTER_UNIT); // The APB_CLK clock is running at 80 MHz
 
  
@@ -57,10 +57,18 @@ uint16_t EnconderCounter:: convert_microsec_to_APB(uint16_t time)
  if(v>1023) v = 1023; //o valor máximo v é 1023 pois filter_val é um valor de 10-bit (1.27ms)
   return v;
 }  
+uint16_t testBefore =0;
 double EnconderCounter:: getRPS()
 {
+
 uint32_t now = micros();
 uint32_t timeInterval = now - pastTime;
+//if(millis() - testBefore >= 1000)
+//{
+//Serial.printf("Pulses: %d \n", PULSES);
+//Serial.printf("speed %f \n", currentVelocity);
+//testBefore = millis();
+//}
 pcnt_get_counter_value(COUNTER_UNIT, &PULSES);
 //Serial.printf("Pulses: %d \n", PULSES);
 

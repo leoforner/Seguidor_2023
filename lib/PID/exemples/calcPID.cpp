@@ -1,8 +1,8 @@
-#include <Arduino.h>
-#include <lineSensor.h>
-#include <PID.h>
+//#include <Arduino.h>
+//#include <lineSensor.h>
+//#include <PID.h>
 
-uint8_t pinos[8] = {34, 35, 32, 33, 25, 26, 27, 14};
+/*uint8_t pinos[8] = {34, 35, 32, 33, 25, 26, 27, 14};
 lineSensor ls(8, pinos, true);
 
 PID pid(1.0, 1.0, 1.0, 4095);
@@ -46,7 +46,7 @@ void loop() {
 
     pid1 = pid.simplePD(kp, kp, erro);
     pid1 = pid.simplePI(kp, ki, erro);
-    */
+    
 
     delay(100);
-}
+}*/

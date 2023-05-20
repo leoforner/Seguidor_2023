@@ -8,6 +8,7 @@
 class PID{
     public: 
         //construtor
+        PID();
         PID(double kpr, double kir, double kdr, int limit);
         PID(double kpr, double kir, double kdr,
                     double kpt, double kit, double kdt, int limit);
@@ -32,7 +33,7 @@ class PID{
          * mode Rotacional ou Translacional
          */
         int32_t calcPID(int32_t error, uint8_t mode);
-        int simplePI(double kp, double ki, int32_t error);
+        int simplePI(double kp, double ki, double error, int32_t limit);
         int simplePD(double kp, double kd, int32_t error);
         // printa as configurações
         void printConfig();

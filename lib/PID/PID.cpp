@@ -4,6 +4,13 @@
 #include "PID.h"
 #include <Arduino.h>
 
+PID::PID(){
+    this->kpr = 1; 
+    this->kir = 1; 
+    this->kdr = 1; 
+    this->limit = 1;
+}
+
 PID::PID(double kpr, double kir, double kdr, int limit){
     this->kpr = kpr; 
     this->kir = kir; 
@@ -20,6 +27,9 @@ PID::PID(double kpr, double kir, double kdr,
     this->kit = kit; 
     this->kdt = kdt; 
     this->limit = limit;
+}
+
+PID::~PID(){
 }
 
 void PID::begin(){
@@ -104,7 +114,7 @@ int32_t PID::simplePID(double kp, double ki, double kd, int32_t error){
     return PID;
 }
 
-int32_t PID::simplePI(double kp, double ki, int32_t error){
+int32_t PID::simplePI(double kp, double ki, double error, int32_t localLimit){
     // calcula quanto tempo passou desde o ultimo calculo
     float t = (millis() - lastTime)/1000.0;
     lastTime = millis();
@@ -116,10 +126,10 @@ int32_t PID::simplePI(double kp, double ki, int32_t error){
     double I = (sumError * ki) * t;
 
     // garante que a integral nao sature
-    if((I >= limit) && (error >= 0)){
-        I = limit;
-    }else if((I <= -limit) && (error <= 0)){
-        I = -limit;
+    if((I >= localLimit) && (error >= 0)){
+        I = localLimit;
+    }else if((I <= -localLimit) && (error <= 0)){
+        I = -localLimit;
     }else{
         sumError += error;
     }
@@ -128,10 +138,10 @@ int32_t PID::simplePI(double kp, double ki, int32_t error){
     int32_t PI_ = P + I;
 
     // garante que o PID nao sature
-    if(PI_ > limit){
-        PI_ = limit;
-    }else if(PI_ < -limit){
-        PI_ = -limit;
+    if(PI_ > localLimit){
+        PI_ = localLimit;
+    }else if(PI_ < -localLimit){
+        PI_ = -localLimit;
     }
 
     if(verb){
