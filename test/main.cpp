@@ -27,25 +27,34 @@ unsigned long pastTime = 0;
 bool rot = false;
 void loop() {
   double vel = encoder.getRPS();
-  double erro = (10.0) - vel;
-  if(rot) erro *= -1;
+  //char* a = "a";
 
-  uint32_t pwmsaida = pid.simplePI(300, 300, erro, 4095);
+  Serial.printf("%f \n", vel);
+ // Serial.printf(a);
+  //for(int i=0; i<300; i++)
+  //{
 
-  if(pwmsaida > 0){
-    digitalWrite(bin2, HIGH);
-    digitalWrite(bin1, LOW);
-    rot = false;
-  }else{
-    digitalWrite(bin2, LOW);
-    digitalWrite(bin1, HIGH);
-    rot = true;
-    pwmsaida *= -1;
-  }
-
-  ledcWrite(0, pwmsaida);
-
-  Serial.printf("Erro: %.3f\tvel: %.3f\tpwm: %d\n", erro, vel, pwmsaida);
-  
   delay(100);
+//  }
+  // double erro = (10.0) - vel;
+  // if(rot) erro *= -1;
+
+  // uint32_t pwmsaida = pid.simplePI(300, 300, erro, 4095);
+
+  // if(pwmsaida > 0){
+  //   digitalWrite(bin2, HIGH);
+  //   digitalWrite(bin1, LOW);
+  //   rot = false;
+  // }else{
+  //   digitalWrite(bin2, LOW);
+  //   digitalWrite(bin1, HIGH);
+  //   rot = true;
+  //   pwmsaida *= -1;
+  // }
+
+   ledcWrite(0, 4095);
+
+  // Serial.printf("Erro: %.3f\tvel: %.3f\tpwm: %d\n", erro, vel, pwmsaida);
+  
+ 
 }
