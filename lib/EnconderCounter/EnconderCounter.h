@@ -3,6 +3,7 @@
   #include <driver/pcnt.h>
   #include "esp_task_wdt.h"
   #include "esp_task.h"
+  #define sampleSize 1
 class EnconderCounter{
 public:
 EnconderCounter(int GPIO_PINO, pcnt_unit_t COUNTER_UNIT, unsigned long pulseForRevolution, uint16_t filterTime=0);
@@ -20,6 +21,9 @@ uint32_t filterTime;
 //int16_t oldPulses=0;
 uint32_t pastTime=0;
 double currentVelocity = 0;
+const uint32_t waitTime = 25; //ms 
+double samples[sampleSize];
+int sampleIndex = 0;
 public:
 //Functions
 double getRPM(); // GET ROTATION PER MINUTE

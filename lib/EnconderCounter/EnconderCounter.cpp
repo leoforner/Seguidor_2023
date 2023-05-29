@@ -35,7 +35,7 @@ Serial.begin(115200);
   //uint16_t t = 1000;//convert_microsec_to_APB();
   //Serial.print("APB cycles: " );
   //Serial.println(t);
-  pcnt_set_filter_value(COUNTER_UNIT, 36); // o segundo argumento é a quantidade de pulsos do APB clock( frequencia do bus do esp), então o tempo é relativo a frequência do bus
+  pcnt_set_filter_value(COUNTER_UNIT, 36); //36 // o segundo argumento é a quantidade de pulsos do APB clock( frequencia do bus do esp), então o tempo é relativo a frequência do bus
   pcnt_filter_enable(COUNTER_UNIT); // The APB_CLK clock is running at 80 MHz
 
  
@@ -63,14 +63,9 @@ double EnconderCounter:: getRPS()
 
 uint32_t now = micros();
 uint32_t timeInterval = now - pastTime;
-//if(millis() - testBefore >= 1000)
-//{
-//Serial.printf("Pulses: %d \n", PULSES);
-//Serial.printf("speed %f \n", currentVelocity);
-//testBefore = millis();
-//}
+//Serial.printf("tiemInterval: %d \n", timeInterval);
 pcnt_get_counter_value(COUNTER_UNIT, &PULSES);
-//Serial.printf("Pulses: %d \n", PULSES);
+
 
   if(PULSES <=0)
   {
@@ -80,19 +75,47 @@ pcnt_get_counter_value(COUNTER_UNIT, &PULSES);
      //Serial.printf("Pulses is %d now \n", PULSES);
      return currentVelocity;
   }
-  else if (timeInterval <= 0){
+  else if (timeInterval <= 0)
+  {
     //Serial.println("Time interval is equal 0");
     return currentVelocity;
-    }
-  else{
-    currentVelocity = ((PULSES*1.0) /(PULSE_FOR_REVOLUTION*1.0)) / (timeInterval/1e6);
+  }
+  else //if(timeInterval >= this->waitTime)
+  {
+    double a = ((PULSES*1.0) /(PULSE_FOR_REVOLUTION*1.0));
+    double b = (timeInterval/1e6);
+    double c = a/b;
+    //Serial.println(timeInterval);
+     //Serial.printf("a %f \n", a);
+     //Serial.printf("b %f \n", b);
+    // Serial.printf("c %f \n", c);
+    currentVelocity = ((PULSES*1.0) /(PULSE_FOR_REVOLUTION*1.0)) / (timeInterval/1000000);
     pastTime = micros();
+    Serial.printf("currentVelocity %f \n", currentVelocity);
+    Serial.printf("PULSOS: %d \n", PULSES);
+    /* samples[sampleIndex] = PULSES;
+    sampleIndex++;
+    if(sampleIndex>=sampleSize)
+    {
+      sampleIndex = 0;
+      int pulseSum = 0;
+      for(int i=0; i<sampleSize; i++)
+      {
+        pulseSum+=samples[sampleIndex];
+      }
+      int pulsesAverage = pulseSum/sampleSize; */
+      //Serial.printf("Pulse Average: %d \n", pulsesAverage);
+      //Serial.printf("Pulses: %d \n", PULSES);
+      delay(10);
+ //  Serial.printf("tiemInterval: %d \n", timeInterval);
+  //}
     pcnt_counter_pause(COUNTER_UNIT);
     pcnt_counter_clear(COUNTER_UNIT);
     pcnt_counter_resume(COUNTER_UNIT);
     //Serial.printf("RPS %f \n", t);
     return currentVelocity;
-    }
+  }
+//return currentVelocity;
 } 
 
 

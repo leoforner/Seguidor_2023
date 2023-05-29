@@ -29,12 +29,12 @@ void loop() {
   double vel = encoder.getRPS();
   //char* a = "a";
 
-  Serial.printf("%f \n", vel);
+ // Serial.printf("%f \n", vel);
  // Serial.printf(a);
   //for(int i=0; i<300; i++)
   //{
 
-  delay(100);
+  //delay(100);
 //  }
   // double erro = (10.0) - vel;
   // if(rot) erro *= -1;
