@@ -1,76 +1,33 @@
 #include <Arduino.h>
-#include <EnconderCounter.h>
-EnconderCounter encoder(23, PCNT_UNIT_0, 140, 1000);
+#include <lineSensor.h>
 
-// divisor tensao 
-#define in 36
-// bateria 
-#define pwmb 5
-#define pwma 18
-
-double medidas[300]; 
-
-
-float interpolacaoLinear(float analog, float vMin, float vMax,
-                float adc_min, float adc_max) {
-  return vMin +
-         (analog - adc_min) * (vMax - vMin) / (adc_max - adc_min);
-}
-
-float analogicoParaTensao(float analog) {
-  if (analog < 22)
-    return interpolacaoLinear(analog, 0.0, 0.17, 0, 22);
-  else if (analog >= 22 && analog < 1832)
-    return interpolacaoLinear(analog, 0.17, 1.66, 22, 1832);
-  else if (analog >= 1832 && analog < 3138)
-    return interpolacaoLinear(analog, 1.66, 2.69, 1832, 3138);
-  else if (analog >= 3138 && analog < 4095)
-    return interpolacaoLinear(analog, 2.69, 3.12, 3138, 4095);
-  else
-    return 3.2;
-}
+uint8_t sensores[] = {34, 35, 32, 33, 25, 26, 27, 14},
+        qtdSensores = 8;
+lineSensor ls(qtdSensores, sensores, true);
 
 void setup() {
-    delay(3000);
-    Serial.begin(115200);
-    pinMode(pwmb, OUTPUT);
-    pinMode(pwma, OUTPUT);
-    pinMode(in, INPUT);
+  Serial.begin(115200);
+    ls.setLed(2);
+    ls.begin();
 
-    ledcSetup(0, 5000, 12);
-    ledcAttachPin(pwmb, 0); 
-    ledcSetup(1, 5000, 12);
-    ledcAttachPin(pwma, 1);  
+    for(uint8_t i = 0; i < 8; i++){
+      pinMode(sensores[i], INPUT);
+    }
+
+    //ls.setVerb(true);
+    //ls.calibration(STATIC);
+    //ls.printConfig();
 }
 
-bool dale = false;
 void loop() {
-    // aplicar pwm duarante tempo determinado
-    for(int i = 0; i < 200; i++){
-      // le a tensao da bateria
-        float x = analogRead(in);
-        x = (analogicoParaTensao(x))*4.03;
-        float saida = (4.0*4095)/x;
-
-        // apllica o pwm correspondente
-        ledcWrite(0, saida);
-        ledcWrite(1, saida);
-
-        // salva a velocidade  
-        medidas[i] = encoder.getRPS();
-        delay(10);
-        Serial.println(x);
+    //uint32_t start = millis();
+    //ls.searchLine();
+    //Serial.printf("Medida = %d \t Tempo: %dms \n", ls.searchLine(), millis() - start);
+    //ls.searchLine();
+    for(uint8_t i = 0; i < 8; i++){
+      Serial.printf("%d\t", analogRead(sensores[i]));
+      delay(5);
     }
-    dale = true;
-    ledcWrite(0, 0);
-    ledcWrite(1, 0);
-
-    // printa o resultado
-    while(dale){
-      Serial.println("-");
-        for(int i = 0; i < 200; i++){
-            Serial.printf("%.3f;\n", medidas[i]);
-        }
-        delay(2000);
-    }
+    Serial.println();
+    delay(100);
 }
