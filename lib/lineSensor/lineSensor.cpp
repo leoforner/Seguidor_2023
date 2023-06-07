@@ -11,8 +11,10 @@ lineSensor::lineSensor(uint8_t sensorCount, uint8_t sensorPins[], bool lineWhite
     minimum = new uint16_t[sensorCount];
 
     // configura os pinos
-    for(int i = 0; i < sensorCount; i++)
+    for(int i = 0; i < sensorCount; i++){
         this->sensorPins[i] = sensorPins[i];
+        pinMode(sensorPins[i], INPUT_PULLDOWN);
+    }
     this->lineWhite = lineWhite;
     this->sensorCount = sensorCount;
 }

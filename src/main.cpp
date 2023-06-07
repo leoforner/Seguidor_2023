@@ -1,37 +1,47 @@
 #include <Arduino.h>
 #include <lineSensor.h>
 
-uint8_t sensores[] = {34, 35, 32, 33, 25, 26, 27, 14},
-        qtdSensores = 8;
-lineSensor ls(qtdSensores, sensores, true);
+#define IR 34
+#define left 39
+#define right 36
+
+#define enc1 23
+#define enc2 22
+#define enc3 5
+#define enc4 18
+#define start 19
+
+#define divTensao 13
+
+uint8_t pinos[] = {35, 32, 33, 25, 26, 27, 14, 12},
+        pinCount = 8;
+lineSensor ls(pinCount, pinos, true);
 
 void setup() {
   Serial.begin(115200);
-    ls.setLed(2);
-    ls.begin();
 
-    for(uint8_t i = 0; i < 8; i++){
-      pinMode(sensores[i], INPUT);
-    }
-    pinMode(2, OUTPUT);
+  pinMode(left, INPUT);
+  pinMode(right, INPUT);
+  pinMode(enc1, INPUT_PULLDOWN);
+  pinMode(enc2, INPUT_PULLDOWN);
+  pinMode(enc3, INPUT_PULLDOWN);
+  pinMode(enc4, INPUT_PULLDOWN);
+  pinMode(start, INPUT_PULLDOWN);
+  pinMode(divTensao, INPUT);
 
-    //ls.setVerb(true);
-    //ls.calibration(STATIC);
-    //ls.printConfig();
+  ls.begin();
+
+  //ls.setVerb(true);
+  ls.calibration(DYNAMIC);
+  ls.printConfig();
+  delay(1000);
 }
 
 void loop() {
-    //uint32_t start = millis();
-    //ls.searchLine();
-    //Serial.printf("Medida = %d \t Tempo: %dms \n", ls.searchLine(), millis() - start);
-    //ls.searchLine();
-    for(uint8_t i = 0; i < 8; i++){
-      Serial.printf("%d\t", analogRead(sensores[i]));
-      
-      delay(5);
-    }
-    Serial.println();
-    digitalWrite(2, HIGH);
-    delay(100);
-    digitalWrite(2, LOW);
+  double position = ls.searchLine() - 3500.0;
+  //sensores
+  Serial.printf("ls: %.2f\tleft: %d\tright: %d\tdivTen: %d\t", position, analogRead(left), analogRead(right), analogRead(divTensao));
+  //encoders
+  Serial.printf("enc1: %d\tenc2: %d\tenc3: %d\tenc4: %d\tstart: %d\n", digitalRead(enc1), digitalRead(enc2), digitalRead(enc3), digitalRead(enc4), digitalRead(start));
+  delay(100);
 }
