@@ -13,6 +13,7 @@ void setup() {
     for(uint8_t i = 0; i < 8; i++){
       pinMode(sensores[i], INPUT);
     }
+    pinMode(2, OUTPUT);
 
     //ls.setVerb(true);
     //ls.calibration(STATIC);
@@ -26,8 +27,11 @@ void loop() {
     //ls.searchLine();
     for(uint8_t i = 0; i < 8; i++){
       Serial.printf("%d\t", analogRead(sensores[i]));
+      
       delay(5);
     }
     Serial.println();
+    digitalWrite(2, HIGH);
     delay(100);
+    digitalWrite(2, LOW);
 }
