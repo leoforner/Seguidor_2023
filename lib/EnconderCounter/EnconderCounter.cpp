@@ -35,10 +35,10 @@ Serial.begin(115200);
   //uint16_t t = 1000;//convert_microsec_to_APB();
   //Serial.print("APB cycles: " );
   //Serial.println(t);
-  pcnt_set_filter_value(COUNTER_UNIT, 36); //36 // o segundo argumento é a quantidade de pulsos do APB clock( frequencia do bus do esp), então o tempo é relativo a frequência do bus
+  pcnt_set_filter_value(COUNTER_UNIT, 36); // o segundo argumento é a quantidade de pulsos do APB clock( frequencia do bus do esp), então o tempo é relativo a frequência do bus
   pcnt_filter_enable(COUNTER_UNIT); // The APB_CLK clock is running at 80 MHz
 
- 
+this->setFiltroCostant(0.4); //constant padrão caso nenhuma seja definida 
   
 
 }
@@ -57,65 +57,31 @@ uint16_t EnconderCounter:: convert_microsec_to_APB(uint16_t time)
  if(v>1023) v = 1023; //o valor máximo v é 1023 pois filter_val é um valor de 10-bit (1.27ms)
   return v;
 }  
-uint16_t testBefore =0;
 double EnconderCounter:: getRPS()
 {
-
 uint32_t now = micros();
 uint32_t timeInterval = now - pastTime;
-//Serial.printf("tiemInterval: %d \n", timeInterval);
 pcnt_get_counter_value(COUNTER_UNIT, &PULSES);
-
-
   if(PULSES <=0)
   {
-    //PULSES = oldPulses;
-  //  Serial.print("Pulses was equal ");
-   // Serial.println(oldPulses);
-     //Serial.printf("Pulses is %d now \n", PULSES);
+    if(now - pastTime >= 2e6)
+    {
+      currentVelocity = 0;  //se já faz mais de X tempo desde a ultima vez que eu medi a velocidade e ainda tá dando 0 pulso, então provavelmente o carrinho tá parado
+    }
      return currentVelocity;
   }
-  else if (timeInterval <= 0)
-  {
-    //Serial.println("Time interval is equal 0");
+  else if (timeInterval <= 0){
     return currentVelocity;
-  }
-  else //if(timeInterval >= this->waitTime)
-  {
-    double a = ((PULSES*1.0) /(PULSE_FOR_REVOLUTION*1.0));
-    double b = (timeInterval/1e6);
-    double c = a/b;
-    //Serial.println(timeInterval);
-     //Serial.printf("a %f \n", a);
-     //Serial.printf("b %f \n", b);
-    // Serial.printf("c %f \n", c);
-    currentVelocity = ((PULSES*1.0) /(PULSE_FOR_REVOLUTION*1.0)) / (timeInterval/1000000);
+    }
+  else{
+    currentVelocity = ((PULSES*1.0) /(PULSE_FOR_REVOLUTION*1.0)) / (timeInterval/1e6);
     pastTime = micros();
-    Serial.printf("currentVelocity %f \n", currentVelocity);
-    Serial.printf("PULSOS: %d \n", PULSES);
-    /* samples[sampleIndex] = PULSES;
-    sampleIndex++;
-    if(sampleIndex>=sampleSize)
-    {
-      sampleIndex = 0;
-      int pulseSum = 0;
-      for(int i=0; i<sampleSize; i++)
-      {
-        pulseSum+=samples[sampleIndex];
-      }
-      int pulsesAverage = pulseSum/sampleSize; */
-      //Serial.printf("Pulse Average: %d \n", pulsesAverage);
-      //Serial.printf("Pulses: %d \n", PULSES);
-      delay(10);
- //  Serial.printf("tiemInterval: %d \n", timeInterval);
-  //}
     pcnt_counter_pause(COUNTER_UNIT);
     pcnt_counter_clear(COUNTER_UNIT);
     pcnt_counter_resume(COUNTER_UNIT);
     //Serial.printf("RPS %f \n", t);
-    return currentVelocity;
-  }
-//return currentVelocity;
+    return filtro(currentVelocity);
+    }
 } 
 
 
@@ -127,4 +93,21 @@ int16_t EnconderCounter::getPulses(){
 double EnconderCounter:: getRadiansVelocity() 
 {
   return getRPS() * 2 * PI;
+}
+double EnconderCounter:: filtro(double x){
+  double yn = x - (a * h1) - (b * h2);
+
+  h1 = yn;
+
+  h2 = h1;
+
+  yn /= 1/(1 + a + b);
+
+  return yn;
+
+}
+void EnconderCounter:: setFiltroCostant(double r){
+ this->r = r;
+ double a = -2.0*r;
+ double b = r*r; 
 }
