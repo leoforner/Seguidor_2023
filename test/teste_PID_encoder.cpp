@@ -22,23 +22,18 @@ void setup() {
 
 }
 
-unsigned long pastTime = 0;
-bool rot = false;
 void loop() {
   double vel = encoder.getRPS();
   double erro = (10.0) - vel;
-  if(rot) erro *= -1;
 
   uint32_t pwmsaida = pid.simplePI(300, 300, erro, 4095);
 
   if(pwmsaida > 0){
     digitalWrite(bin2, HIGH);
     digitalWrite(bin1, LOW);
-    rot = false;
   }else{
     digitalWrite(bin2, LOW);
     digitalWrite(bin1, HIGH);
-    rot = true;
     pwmsaida *= -1;
   }
 
