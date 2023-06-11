@@ -18,7 +18,8 @@ void setup() {
     pinMode(bin2, OUTPUT);
 
     ledcSetup(0, 5000, 12);
-    ledcAttachPin(pwmb, 0);    
+    ledcAttachPin(pwmb, 0);
+
 }
 
 unsigned long pastTime = 0;

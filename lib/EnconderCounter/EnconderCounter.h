@@ -20,6 +20,8 @@ uint32_t filterTime;
 //int16_t oldPulses=0;
 uint32_t pastTime=0;
 double currentVelocity = 0;
+double h1 = 0.0, h2=0.0, r=0, a=0, b=0;
+
 public:
 //Functions
 double getRPM(); // GET ROTATION PER MINUTE
@@ -27,4 +29,7 @@ double getRPS(); //get ROTATION PER SECOND
 double getRadiansVelocity();
 int16_t getPulses();
 uint16_t convert_microsec_to_APB(uint16_t time); //pega a velocidade radial por segundos
+double filtro(double x);
+void setFiltroCostant(double r);
+
 };
