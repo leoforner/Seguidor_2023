@@ -9,6 +9,9 @@ PID::PID(){
     this->kir = 1; 
     this->kdr = 1; 
     this->limit = 1;
+    verb = false;
+    lastTime = 0;
+    sumError = 0;
 }
 
 PID::PID(double kpr, double kir, double kdr, int limit){
@@ -16,6 +19,9 @@ PID::PID(double kpr, double kir, double kdr, int limit){
     this->kir = kir; 
     this->kdr = kdr; 
     this->limit = limit;
+    verb = false;
+    lastTime = 0;
+    sumError = 0;
 }
     
 PID::PID(double kpr, double kir, double kdr,
@@ -27,15 +33,12 @@ PID::PID(double kpr, double kir, double kdr,
     this->kit = kit; 
     this->kdt = kdt; 
     this->limit = limit;
-}
-
-PID::~PID(){
-}
-
-void PID::begin(){
     verb = false;
     lastTime = 0;
     sumError = 0;
+}
+
+PID::~PID(){
 }
 
 void PID::setConst(double kpr, double kir, double kdr){

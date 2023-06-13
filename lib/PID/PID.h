@@ -13,8 +13,6 @@ class PID{
         PID(double kpr, double kir, double kdr,
                     double kpt, double kit, double kdt, int limit);
         ~PID();
-        // inicia lib
-        void begin();
         // atualiza as constantes rotacionais
         void setConst(double kpr, double kir, double kdr);
         // atualiza todas constantes

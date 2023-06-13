@@ -39,8 +39,6 @@ Serial.begin(115200);
   pcnt_filter_enable(COUNTER_UNIT); // The APB_CLK clock is running at 80 MHz
 
 this->setFiltroCostant(0.4); //constant padrão caso nenhuma seja definida 
-  
-
 }
 EnconderCounter::~EnconderCounter(){}
 void IRAM_ATTR EnconderCounter::pcnt_isr_handler(void *arg){}
@@ -104,8 +102,8 @@ double EnconderCounter:: filtro(double x){
   yn /= 1/(1 + a + b);
 
   return yn;
-
 }
+
 void EnconderCounter:: setFiltroCostant(double r){
  this->r = r;
  double a = -2.0*r;

@@ -10,7 +10,6 @@ PID pid;
 EnconderCounter encoder(23, PCNT_UNIT_0, 140, 1000);
 void setup() {
     Serial.begin(115200);
-    pid.begin();
     //pid.setVerb(true);
     //Serial.println(encoder.getRPS());
     pinMode(pwmb, OUTPUT);
@@ -19,7 +18,6 @@ void setup() {
 
     ledcSetup(0, 5000, 12);
     ledcAttachPin(pwmb, 0);
-
 }
 
 void loop() {

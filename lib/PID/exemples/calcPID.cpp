@@ -15,7 +15,6 @@ void setup() {
     ls.calibration(STATIC);
 
     // inicia o PID
-    pid.begin();
     // pode definir variaveis para 2 PIDs
     pid.printConfig();
 }
