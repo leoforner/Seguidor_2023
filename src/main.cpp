@@ -1,20 +1,26 @@
 #include "EnconderCounter.h"
+#include <BluetoothSerial.h>
 #include <PID.h>
+
+BluetoothSerial SerialBT;
 
 PID pid1;
 PID pid2;
 
-#define divTensao 36
+#define divTensao 13
 
-#define PWMA 19
-#define PWMB 21
-#define esq1 15
-#define esq2 4
-#define dir1 5
-#define dir2 2
+#define PWMB 17
+#define esq1 2
+#define esq2 0
+#define dir1 4
+#define dir2 16
+
+#define left 39
+#define right 36
+
+double kp = 0, ki = 0;
 
 EnconderCounter * encoder1;
-EnconderCounter * encoder2;
 
 float interpolacaoLinear(float analog, float vMin, float vMax,
                 float adc_min, float adc_max) {
@@ -35,28 +41,58 @@ float analogicoParaTensao(float analog) {
     return 3.2;
 }
 
+String texto = "";
+void recebeDados(){
+  // recebe as chars e soma em um texto
+  char a = SerialBT.read();
+  texto += a;
+
+  // separa as constantes quando recebe o texto todo
+  if(a == '}'){
+    // muda as constantes 
+    kp = (texto.substring(1, texto.indexOf('/'))).toFloat();
+    ki = (texto.substring(texto.indexOf('/')+1, texto.indexOf('}'))).toFloat();
+
+    // printa os valores
+    Serial.print(kp);     Serial.print("\t");
+    //Serial.print(kp1);     Serial.print("\t"); 
+    Serial.print(ki);     Serial.print("\n");
+
+    // limpa a variavel para o proximo loop
+    //Serial.println(texto);
+    texto = "";
+  }
+}
+
+
 void beginEnc(void * xTaskParameters){
-    encoder1 = new EnconderCounter(17, PCNT_UNIT_0, 140, 1000);
-    encoder2 = new EnconderCounter(16, PCNT_UNIT_1, 140, 1000);
-    
+    encoder1 = new EnconderCounter(23, PCNT_UNIT_0, 140, 1000);  
+
+    for(;;){ // loop perpétuo
+    // caso ele receba algum dado ele altera as constantes 
+    if(SerialBT.available()){
+      recebeDados();
+    }
+  } 
+
     vTaskDelete(NULL);
 }
 
 void setup() {
     Serial.begin(115200);
+    SerialBT.begin("teste_lol");
 
     pinMode(esq1, OUTPUT);
     pinMode(esq2, OUTPUT);
     pinMode(dir1, OUTPUT);
     pinMode(dir2, OUTPUT);
+    pinMode(left, INPUT);
+    pinMode(right, INPUT);
 
     pinMode(divTensao, INPUT);
 
-    pinMode(PWMA, OUTPUT);
     pinMode(PWMB, OUTPUT);
     ledcSetup(0, 5000, 12); // canal para esquerdo
-    ledcSetup(1, 5000, 12); // canal para o direito
-    ledcAttachPin(PWMA, 1);
     ledcAttachPin(PWMB, 0);
 
     xTaskCreate(beginEnc, "qualquercoisaai", 10000, NULL, 1, NULL);
@@ -68,13 +104,11 @@ void loop() {
     int vMax_6v = (6.0*4095)/tensaoBat;
     if(vMax_6v > 4095) vMax_6v = 4095;
 
-    double vel1 = encoder1->getRPS();
-    double erro1 = (10.0) - vel1;
-    uint32_t pwmsaida1 = pid1.simplePI(150, 300, erro1, 4095);
+    float setPoint = analogRead(left)*20.0/4095.0;
 
-    double vel2 = encoder2->getRPS();
-    double erro2 = (10.0) - vel2;
-    uint32_t pwmsaida2 = pid2.simplePI(150, 300, erro2, 4095);
+    double vel1 = (encoder1->getRPS())/3;
+    double erro1 = setPoint - vel1;
+    uint32_t pwmsaida1 = pid1.simplePI(kp, ki, erro1, 4095);
 
     digitalWrite(dir1, HIGH);
     digitalWrite(dir2, LOW);
@@ -82,13 +116,10 @@ void loop() {
     digitalWrite(esq2, LOW);
 
     pwmsaida1 = map(pwmsaida1, 0, 4096, 0, vMax_6v);
-    pwmsaida2 = map(pwmsaida2, 0, 4096, 0, vMax_6v);
 
     ledcWrite(0, pwmsaida1);
-    ledcWrite(1, pwmsaida2);
 
-    Serial.printf("Erro: %.3f\tvel: %.3f\tpwm: %d\t--\t", erro1, vel1, pwmsaida1);
-    Serial.printf("Erro: %.3f\tvel: %.3f\tpwm: %d\t", erro2, vel2, pwmsaida2);
-    Serial.printf("bateria: %.2f\n", tensaoBat);    
+    Serial.printf("%.2f,%.3f\n", setPoint, vel1);
+    //Serial.printf("bateria: %.2f\n", tensaoBat);    
     delay(100);
 }
