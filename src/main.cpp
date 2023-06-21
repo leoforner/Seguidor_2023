@@ -1,11 +1,11 @@
 #include "EnconderCounter.h"
 #include <BluetoothSerial.h>
-#include <PID.h>
+#include <PD.h>
 
 BluetoothSerial SerialBT;
 
-PID pid1;
-PID pid2;
+PD pid1;
+PD pid2;
 
 #define divTensao 13
 
