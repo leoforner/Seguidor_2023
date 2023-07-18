@@ -1,38 +1,44 @@
 #include <Arduino.h>
 #include <lineSensor.h>
+#include <mathModel.h>
 
-uint32_t timeFilter = 0; // filtro para o botao
-uint8_t state = 0;
+uint32_t timeFilter = 0;  // filtro para o botao
+uint8_t state = 0;        // estados do carrinho 
+// 0 desligado
+// 1 calibrando
+// 2 e 3 pista
+// 4 final da pista
 
 // analogicos
 #define left 34
 #define right 36
 #define divTensao 39
-
 // botoes
 #define enc1 18
 #define enc2 19
 #define enc3 21
 #define enc4 22
 #define start 23
-
 // motor 1
 #define pwma 5
 #define ain2 2
 #define ain1 15
-
 // motor 2
 #define pwmb 17
 #define bin1 4
 #define bin2 16 
-
 // sensores frontais
 #define IR 34
 
 uint8_t pinos[] = {32, 33, 25, 26, 27, 14, 12, 13},
         pinCount = 8;
+lineSensor sensorFrontal(pinCount, pinos, true);
 
-lineSensor ls(pinCount, pinos, true);
+mathModel modeloMatematico;               // X    Y
+double carVector[3][2] =   {{+7.5, -2.0},    // roda direita
+                            {-7.5, -2.0},    // roda esquerda
+                            {+0.0, 11.0}};   // linha de sensores
+double wheelsRadius = 1.5, actingTime = 1;
 
 void IRAM_ATTR change_state(){
   if((millis() - timeFilter) > 1000){
@@ -61,7 +67,7 @@ void IRAM_ATTR interrupt(void * param){
       while(!analogRead(right)) delay(100);
       change_state();
     }
-    delay(10);
+    delay(5);
   }
   //vTaskDelete(NULL);
 }
@@ -99,11 +105,19 @@ void setup() {
   while(state < 1) delay(10);
 
   Serial.println("Calibrando...");
-  // biblioteca dos sensores
-  ls.begin();
-  //ls.setVerb(true);
-  ls.calibration(STATIC);
-  ls.printConfig();
+  modeloMatematico.begin(carVector, wheelsRadius, actingTime);
+  sensorFrontal.begin();
+  // a linha tem 5.7 centimetros com 8 sensores
+  float pesos[8];
+  for(int i = 0; i < 8; i++) pesos[i] = i * 5.7/7; 
+  // altera o peso padrao para calcular a distancia da linha
+  sensorFrontal.setweights(pesos);
+  // dessa forma a saida esta em nanometro
+  // divindo por 100 a medida passa para centimetros
+  sensorFrontal.setTrackCharacteristics(100, 0, 30);
+  //sensorFrontal.setVerb(true);
+  sensorFrontal.calibration(STATIC);
+  sensorFrontal.printConfig();
 
   // ponte h config 
   pinMode(pwma, OUTPUT);
@@ -119,9 +133,14 @@ void setup() {
 }
 
 void loop() {
-  // calcula onde esta a linha
-  double position = ls.searchLine(&state) - 3500.0;
-  Serial.printf("%.2f - %d - %d\n", position, state, analogRead(right));
+  // distancia entre o sensor e a linha em cm
+  double distanciaLinha = (sensorFrontal.searchLine(&state)/100.0) - 5.70/2.0;
+  
+  // calcula o setPoint de cada roda em cm/s
+  double* wheelsSetPoint = modeloMatematico.calculateSetPoints(distanciaLinha);
+
+  // resultados
+  Serial.printf("erro: %.2f\tr1: %.3frps\tr2: %.3frps\n", distanciaLinha, wheelsSetPoint[0], wheelsSetPoint[1]);
 
   // controle entra aqui
   delay(1);
