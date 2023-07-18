@@ -62,7 +62,7 @@ uint32_t timeInterval = now - pastTime;
 pcnt_get_counter_value(COUNTER_UNIT, &PULSES);
   if(PULSES <=0)
   {
-    if(now - pastTime >= 2e6)
+    if(now - pastTime >= 30)
     {
       currentVelocity = 0;  //se já faz mais de X tempo desde a ultima vez que eu medi a velocidade e ainda tá dando 0 pulso, então provavelmente o carrinho tá parado
     }

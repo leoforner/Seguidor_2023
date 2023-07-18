@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <lineSensor.h>
+#include <EnconderCounter.h>
 #include <mathModel.h>
 
 uint32_t timeFilter = 0;  // filtro para o botao
@@ -39,6 +40,9 @@ double carVector[3][2] =   {{+7.5, -2.0},    // roda direita
                             {-7.5, -2.0},    // roda esquerda
                             {+0.0, 11.0}};   // linha de sensores
 double wheelsRadius = 1.5, actingTime = 1;
+
+EnconderCounter encoderLeft(enc3, PCNT_UNIT_0, 140, 1000);
+EnconderCounter encoderRight(enc1, PCNT_UNIT_1, 140, 1000);
 
 void IRAM_ATTR change_state(){
   if((millis() - timeFilter) > 1000){
@@ -140,7 +144,12 @@ void loop() {
   double* wheelsSetPoint = modeloMatematico.calculateSetPoints(distanciaLinha);
 
   // resultados
-  Serial.printf("erro: %.2f\tr1: %.3frps\tr2: %.3frps\n", distanciaLinha, wheelsSetPoint[0], wheelsSetPoint[1]);
+  Serial.printf("erro: %.2f\tr1: %.3frps\tr2: %.3frps\t", distanciaLinha, wheelsSetPoint[0], wheelsSetPoint[1]);
+
+  // velocidade dos motores
+  double velRight = encoderRight.getRPS();
+  double velLeft = encoderLeft.getRPS();
+  Serial.printf("Right: %.2frps\tLeft: %.2frps\n", velRight, velLeft);
 
   // controle entra aqui
   delay(1);
