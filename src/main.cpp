@@ -45,11 +45,11 @@ EnconderCounter encoderLeft(enc3, PCNT_UNIT_0, 140, 1000);
 EnconderCounter encoderRight(enc1, PCNT_UNIT_1, 140, 1000);
 
 void IRAM_ATTR change_state(){
-  if((millis() - timeFilter) > 1000){
+  if((millis() - timeFilter) > 200){
     if(state < 4) { // avança o estado
       state++;  
     }else{         // reseta a esp
-      Serial.println("Esp reset - state 3");
+      Serial.println("Esp reset - state 4");
       ESP.restart();    
     }
     timeFilter = millis();
@@ -79,6 +79,8 @@ void IRAM_ATTR interrupt(void * param){
 void setup() {
   Serial.begin(115200);
 
+  pinMode(2, OUTPUT);
+  digitalWrite(2, LOW); // desliga o led
   pinMode(left, INPUT);
   pinMode(right, INPUT);
   pinMode(enc1, INPUT);
@@ -108,8 +110,9 @@ void setup() {
   Serial.println("Carrinho ligado, pressione o botao para iniciar calibração");
   while(state < 1) delay(10);
 
-  Serial.println("Calibrando...");
   modeloMatematico.begin(carVector, wheelsRadius, actingTime);
+
+  Serial.println("Calibrando...");
   sensorFrontal.begin();
   // a linha tem 5.7 centimetros com 8 sensores
   float pesos[8];
@@ -133,7 +136,15 @@ void setup() {
 
   Serial.println("Sensor calibrado, pressione o botao para iniciar trajeto");
   while(state < 2) delay(10);
-  delay(3000);
+  
+  // sinalização piscando led
+  delay(100);
+  for(uint8_t i = 0; i < 4; i++){
+    digitalWrite(2, HIGH);
+    delay(100);
+    digitalWrite(2, LOW);
+    delay(800);
+  }
 }
 
 void loop() {
