@@ -1,125 +1,128 @@
-#include "EnconderCounter.h"
-#include <BluetoothSerial.h>
-#include <PD.h>
+#include <Arduino.h>
+#include <lineSensor.h>
 
-BluetoothSerial SerialBT;
+uint32_t timeFilter = 0; // filtro para o botao
+uint8_t state = 0;
 
-PD pid1;
-PD pid2;
-
-#define divTensao 13
-
-#define PWMB 17
-#define esq1 2
-#define esq2 0
-#define dir1 4
-#define dir2 16
-
-#define left 39
+// analogicos
+#define left 34
 #define right 36
+#define divTensao 39
 
-double kp = 0, ki = 0;
+// botoes
+#define enc1 18
+#define enc2 19
+#define enc3 21
+#define enc4 22
+#define start 23
 
-EnconderCounter * encoder1;
+// motor 1
+#define pwma 5
+#define ain2 2
+#define ain1 15
 
-float interpolacaoLinear(float analog, float vMin, float vMax,
-                float adc_min, float adc_max) {
-  return vMin +
-         (analog - adc_min) * (vMax - vMin) / (adc_max - adc_min);
-}
+// motor 2
+#define pwmb 17
+#define bin1 4
+#define bin2 16 
 
-float analogicoParaTensao(float analog) {
-  if (analog < 22)
-    return interpolacaoLinear(analog, 0.0, 0.17, 0, 22);
-  else if (analog >= 22 && analog < 1832)
-    return interpolacaoLinear(analog, 0.17, 1.66, 22, 1832);
-  else if (analog >= 1832 && analog < 3138)
-    return interpolacaoLinear(analog, 1.66, 2.69, 1832, 3138);
-  else if (analog >= 3138 && analog < 4095)
-    return interpolacaoLinear(analog, 2.69, 3.12, 3138, 4095);
-  else
-    return 3.2;
-}
+// sensores frontais
+#define IR 34
 
-String texto = "";
-void recebeDados(){
-  // recebe as chars e soma em um texto
-  char a = SerialBT.read();
-  texto += a;
+uint8_t pinos[] = {32, 33, 25, 26, 27, 14, 12, 13},
+        pinCount = 8;
 
-  // separa as constantes quando recebe o texto todo
-  if(a == '}'){
-    // muda as constantes 
-    kp = (texto.substring(1, texto.indexOf('/'))).toFloat();
-    ki = (texto.substring(texto.indexOf('/')+1, texto.indexOf('}'))).toFloat();
+lineSensor ls(pinCount, pinos, true);
 
-    // printa os valores
-    Serial.print(kp);     Serial.print("\t");
-    //Serial.print(kp1);     Serial.print("\t"); 
-    Serial.print(ki);     Serial.print("\n");
-
-    // limpa a variavel para o proximo loop
-    //Serial.println(texto);
-    texto = "";
+void IRAM_ATTR change_state(){
+  if((millis() - timeFilter) > 1000){
+    if(state < 4) { // avança o estado
+      state++;  
+    }else{         // reseta a esp
+      Serial.println("Esp reset - state 3");
+      ESP.restart();    
+    }
+    timeFilter = millis();
   }
 }
 
-
-void beginEnc(void * xTaskParameters){
-    encoder1 = new EnconderCounter(23, PCNT_UNIT_0, 140, 1000);  
-
-    for(;;){ // loop perpétuo
-    // caso ele receba algum dado ele altera as constantes 
-    if(SerialBT.available()){
-      recebeDados();
+void IRAM_ATTR interrupt(void * param){
+  attachInterrupt(digitalPinToInterrupt(start), change_state, HIGH);
+  //attachInterrupt(digitalPinToInterrupt(right), change_state, LOW);
+  //attachInterrupt(digitalPinToInterrupt(left), change_state, LOW);
+  
+  // pino 36 e 39 nao suportam interrupt
+  // ficamos verificando os senores laterais sempre
+  while(1){
+    if(!analogRead(right) && state > 1){
+      // delay de 100 millis para esperar o loop principal subtrair 1,
+      // senao somamos antes do loop considerar intersec.
+      // podemos mudar esses 100 millis para menos, porem depende do tempo total de cada loop
+      while(!analogRead(right)) delay(100);
+      change_state();
     }
-  } 
-
-    vTaskDelete(NULL);
+    delay(10);
+  }
+  //vTaskDelete(NULL);
 }
 
 void setup() {
-    Serial.begin(115200);
-    SerialBT.begin("teste_lol");
+  Serial.begin(115200);
 
-    pinMode(esq1, OUTPUT);
-    pinMode(esq2, OUTPUT);
-    pinMode(dir1, OUTPUT);
-    pinMode(dir2, OUTPUT);
-    pinMode(left, INPUT);
-    pinMode(right, INPUT);
+  pinMode(left, INPUT);
+  pinMode(right, INPUT);
+  pinMode(enc1, INPUT);
+  pinMode(enc2, INPUT);
+  pinMode(enc3, INPUT);
+  pinMode(enc4, INPUT);
+  pinMode(start, INPUT);
+  pinMode(divTensao, INPUT);
+  pinMode(ain1, OUTPUT);
+  pinMode(ain2, OUTPUT);
+  pinMode(bin1, OUTPUT);
+  pinMode(bin2, OUTPUT);
+  pinMode(pwma, OUTPUT);
+  pinMode(pwmb, OUTPUT);
 
-    pinMode(divTensao, INPUT);
+  // anexa as interrupcoes ao segundo nucleo
+  xTaskCreatePinnedToCore(
+    interrupt,
+    "interrupt",
+    2048,
+    NULL,
+    2,
+    NULL,
+    0
+  );
 
-    pinMode(PWMB, OUTPUT);
-    ledcSetup(0, 5000, 12); // canal para esquerdo
-    ledcAttachPin(PWMB, 0);
+  Serial.println("Carrinho ligado, pressione o botao para iniciar calibração");
+  while(state < 1) delay(10);
 
-    xTaskCreate(beginEnc, "qualquercoisaai", 10000, NULL, 1, NULL);
-    delay(1000);
+  Serial.println("Calibrando...");
+  // biblioteca dos sensores
+  ls.begin();
+  //ls.setVerb(true);
+  ls.calibration(STATIC);
+  ls.printConfig();
+
+  // ponte h config 
+  pinMode(pwma, OUTPUT);
+  pinMode(pwmb, OUTPUT);
+  ledcSetup(0, 5000, 12); // canal para esquerdo
+  ledcSetup(1, 5000, 12); // canal para o direito
+  ledcAttachPin(pwma, 1);
+  ledcAttachPin(pwmb, 0);
+
+  Serial.println("Sensor calibrado, pressione o botao para iniciar trajeto");
+  while(state < 2) delay(10);
+  delay(3000);
 }
 
 void loop() {
-    float tensaoBat = (analogicoParaTensao(analogRead(divTensao)))*7.08/1.78;
-    int vMax_6v = (6.0*4095)/tensaoBat;
-    if(vMax_6v > 4095) vMax_6v = 4095;
+  // calcula onde esta a linha
+  double position = ls.searchLine(&state) - 3500.0;
+  Serial.printf("%.2f - %d - %d\n", position, state, analogRead(right));
 
-    float setPoint = analogRead(left)*20.0/4095.0;
-
-    double vel1 = (encoder1->getRPS())/3;
-    double erro1 = setPoint - vel1;
-    uint32_t pwmsaida1 = pid1.simplePI(kp, ki, erro1, 4095);
-
-    digitalWrite(dir1, HIGH);
-    digitalWrite(dir2, LOW);
-    digitalWrite(esq1, HIGH);
-    digitalWrite(esq2, LOW);
-
-    pwmsaida1 = map(pwmsaida1, 0, 4096, 0, vMax_6v);
-
-    ledcWrite(0, pwmsaida1);
-
-    Serial.printf("%.2f,%.3f\n", setPoint, vel1);
-    //Serial.printf("bateria: %.2f\n", tensaoBat);    
-    delay(100);
+  // controle entra aqui
+  delay(1);
 }

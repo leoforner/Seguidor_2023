@@ -17,7 +17,7 @@ class lineSensor {
         ~lineSensor();
         void setLed(uint8_t led);
         // calcula onde a linha está 
-        double searchLine();
+        double searchLine(uint8_t* state);
         /**
          * @brief
             Define os pontos maximos e minimos de cada sensor

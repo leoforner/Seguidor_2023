@@ -258,7 +258,7 @@ uint32_t lineSensor::readNormalized(uint8_t index){
     return value;
 }
 
-double lineSensor::searchLine(){
+double lineSensor::searchLine(uint8_t* state){
     // calcula onde a linha esta
     double sum = 0, measuraments = 0;
     bool inLine = false;
@@ -271,6 +271,10 @@ double lineSensor::searchLine(){
         if(x > lineTolerance) 
             inLine = true;     
     }
+
+    // define intersecção
+    if((measuraments) > ((line * sensorCount)/2)) *state = 2;
+
     if(inLine){
         lastPosition = sum/(measuraments); // media ponderada
     }else{ 
