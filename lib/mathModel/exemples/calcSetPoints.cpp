@@ -2,9 +2,9 @@
 #include <lineSensor.h>
 #include <mathModel.h>
 
-lineSensor ls;
 uint8_t pinos[8] = {34, 35, 32, 33, 25, 26, 27, 14}, pinsCount = 8;
 float pesos[8];
+lineSensor ls(pinsCount, pinos, true);
 
 mathModel mm;               // X    Y
 double carVector[3][2] =   {{-3.5, -2.0},    // roda direita
@@ -14,7 +14,7 @@ double wheelsRadius = 2.0, actingTime = 0.5;
 
 void setup() {
     Serial.begin(115200);
-    ls.begin(pinsCount, pinos, true);
+    ls.begin();
     mm.begin(carVector, wheelsRadius, actingTime);
 
     // a linha tem 5.7 centimetros com 8 sensores
@@ -34,9 +34,10 @@ void setup() {
     ls.printConfig();
 }
 
+uint8_t state = 0;
 void loop() {
     // distancia entre o sensor e a linha em cm
-    double lineDistance = (ls.searchLine()/100.0) - 5.70/2.0;
+    double lineDistance = (ls.searchLine(&state)/100.0) - 5.70/2.0;
 
     uint32_t timer = 0;
     timer = micros(); // salva o tempo

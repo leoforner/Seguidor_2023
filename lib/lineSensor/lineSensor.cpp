@@ -11,8 +11,10 @@ lineSensor::lineSensor(uint8_t sensorCount, uint8_t sensorPins[], bool lineWhite
     minimum = new uint16_t[sensorCount];
 
     // configura os pinos
-    for(int i = 0; i < sensorCount; i++)
+    for(int i = 0; i < sensorCount; i++){
         this->sensorPins[i] = sensorPins[i];
+        pinMode(sensorPins[i], INPUT_PULLDOWN);
+    }
     this->lineWhite = lineWhite;
     this->sensorCount = sensorCount;
 }
@@ -256,7 +258,7 @@ uint32_t lineSensor::readNormalized(uint8_t index){
     return value;
 }
 
-double lineSensor::searchLine(){
+double lineSensor::searchLine(uint8_t* state){
     // calcula onde a linha esta
     double sum = 0, measuraments = 0;
     bool inLine = false;
@@ -269,6 +271,10 @@ double lineSensor::searchLine(){
         if(x > lineTolerance) 
             inLine = true;     
     }
+
+    // define intersecção
+    if((measuraments) > ((line * sensorCount)/2)) *state = 2;
+
     if(inLine){
         lastPosition = sum/(measuraments); // media ponderada
     }else{ 

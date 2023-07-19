@@ -18,10 +18,11 @@ void setup() {
     ls.printConfig();
 }
 
+uint8_t state = 0; // define intersecção
 void loop() {
     //uint32_t start = millis();
     //ls.searchLine();
     //Serial.printf("Medida = %d \t Tempo: %dms \n", ls.searchLine(), millis() - start);
-    ls.searchLine();
+    ls.searchLine(&state);
     delay(100);
 }
