@@ -137,6 +137,8 @@ void loop() {
   // resultados
   Serial.printf("erro: %.2f\tr1: %.3frps\tr2: %.3frps\t", distanciaLinha, wheelsSetPoint[0], wheelsSetPoint[1]);
 
+  
+
   // velocidade dos motores
   double velRight = encoderRight.getRPS();
   double velLeft = encoderLeft.getRPS();
