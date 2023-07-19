@@ -41,6 +41,6 @@ void setup() {
 
 
 void loop() {
-ledcWrite(0, 4095);
+//ledcWrite(0, 4095);
 ledcWrite(1, 4095);
 }
