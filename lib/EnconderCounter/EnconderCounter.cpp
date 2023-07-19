@@ -99,13 +99,13 @@ double EnconderCounter:: filtro(double x){
 
   h2 = h1;
 
-  yn /= 1/(1 + a + b);
+  yn *= (1 + a + b);
 
   return yn;
 }
 
 void EnconderCounter:: setFiltroCostant(double r){
- this->r = r;
- double a = -2.0*r;
- double b = r*r; 
+  this->r = r;
+  this->a = -2.0*r;
+  this->b = r*r; 
 }

@@ -75,7 +75,7 @@ int32_t PD::simplePI1(double kp, double ki, double error, int32_t limit){
     }
 
     // salva o ultimo erro
-    lastError[1] = error;
+    lastError[0] = error;
 
     return PI_;
 }
@@ -96,7 +96,7 @@ int32_t PD::simplePI2(double kp, double ki, double error, int32_t limit){
     }else if((I <= -limit) && (error <= 0)){
         I = -limit;
     }else{
-        sumError[2] += error;
+        sumError[1] += error;
     }
 
     // soma tudo 

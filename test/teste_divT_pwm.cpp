@@ -88,7 +88,7 @@ uint16_t contador = 0;
 bool vira = true;
 void loop() {
   // calcula onde esta a linha
-  double position = ls.searchLine() - 3500.0;
+  double position = ls.searchLine(nullptr) - 3500.0;
 
   float bat = (analogicoParaTensao(analogRead(divTensao)))*7.08/1.78;
 

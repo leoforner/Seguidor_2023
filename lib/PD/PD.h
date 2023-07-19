@@ -1,7 +1,7 @@
 // autor Alison
 // email AlisonTristao@hotmail.com
 
-#pragma once // substitui o indef endif
+//#pragma once // substitui o indef endif
 #include <cstdint>
 #include <Arduino.h>
 
