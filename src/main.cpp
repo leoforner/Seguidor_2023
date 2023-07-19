@@ -32,8 +32,8 @@ void IRAM_ATTR PIDJOHNSON(void * parans){
         float erro2 = setPoint - velLeft;
 
         // pid para a roda
-        uint32_t pwmSaida1 = controle.simplePI1(100, 100, erro1, 4095);
-        uint32_t pwmSaida2 = controle.simplePI2(100, 100, erro2, 4095);
+        uint32_t pwmSaida1 = controle.simplePI1(0, 100, erro1, 4095);
+        uint32_t pwmSaida2 = controle.simplePI2(0, 100, erro2, 4095);
 
         // calcula pwm max (correspondente a 6v)
         float tensaoBateria = (analogicoParaTensao(analogRead(divTensao)))*7.6/1.92; //7.6v viram 1.92v (divisor de tensão)
@@ -51,7 +51,7 @@ void IRAM_ATTR PIDJOHNSON(void * parans){
         // plotagem
         Serial.printf("%.2f, %.2f, %.2f\n", setPoint, velLeft, velRight);
 
-        delay(10);
+        delay(20);
     }
 }
 
