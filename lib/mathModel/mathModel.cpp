@@ -2,7 +2,8 @@
 #include <cmath>
 #include <Arduino.h>
 
-void mathModel::begin(double carVector[3][2], double wheelsRadius, double actingTime){
+mathModel::mathModel(double carVector[3][2], double wheelsRadius, double actingTime, double * wheelsSetPoint){
+    this->wheelsSpeed = wheelsSetPoint;
     for(int i = 0; i < 3; i++){
         for(int j = 0; j < 2; j++)
             this->carVector[i][j] = carVector[i][j];
@@ -12,11 +13,13 @@ void mathModel::begin(double carVector[3][2], double wheelsRadius, double acting
     verb = false;
 }
 
+mathModel::~mathModel(){}
+
 void mathModel::setVerb(bool verb){
     this-> verb = verb;
 }
 
-double* mathModel::calculateSetPoints(double lineDistance){
+void mathModel::calculateSetPoints(double lineDistance){
     // atan2 da distancia da linha com a distancia do sensor frontal
     // para calcularmos o angulo entre o eixo do carrinho e a linha
     double peta = atan2(lineDistance, carVector[2][1]);
@@ -41,6 +44,4 @@ double* mathModel::calculateSetPoints(double lineDistance){
     wheelsSpeed[1] /= wheelsRadius*2*PI;
 
     if(verb) Serial.printf("peta: %f\tomega: %f\tVm: %f\t", peta, omegaCar, translationalSpeed);
-
-    return wheelsSpeed;
 }

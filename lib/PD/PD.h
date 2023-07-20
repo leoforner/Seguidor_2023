@@ -23,8 +23,8 @@ class PD{
          */
         int32_t calcPD(uint8_t mode, int32_t error, int32_t limit);
         int32_t calcPI(uint8_t mode, int32_t error, int32_t limit);
-        int simplePI1(double kp, double ki, double error, int32_t limit);
-        int simplePI2(double kp, double ki, double error, int32_t limit);
+        int32_t rightPI(double kp, double ki, double error, int32_t limit);
+        int32_t leftPI(double kp, double ki, double error, int32_t limit);
         int simplePD1(double kp, double kd, int32_t error, int32_t limit);
         int simplePD2(double kp, double kd, int32_t error, int32_t limit);
         // printa as configurações
@@ -35,8 +35,10 @@ class PD{
         uint32_t lastTime[4] = {0, 0, 0, 0};
         double kpt = 1, kdt = 1, kpr = 1, kdr = 1;
         double kple = 1, kile = 1, kpri = 1, kiri = 1;
-        int32_t sumError[2] = {0, 0}, lastError[4] = {0, 0, 0, 0};
+        double lastError[4] = {0, 0, 0, 0};
         bool verb = false;
+        int32_t pi1 = 0, pi2 = 0;
+        int32_t pd1 = 0, pd2 = 0;
 };
 
 typedef enum {

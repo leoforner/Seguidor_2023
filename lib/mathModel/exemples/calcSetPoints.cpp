@@ -6,16 +6,16 @@ uint8_t pinos[8] = {34, 35, 32, 33, 25, 26, 27, 14}, pinsCount = 8;
 float pesos[8];
 lineSensor ls(pinsCount, pinos, true);
 
-mathModel mm;               // X    Y
+                            // X    Y
 double carVector[3][2] =   {{-3.5, -2.0},    // roda direita
                             {+3.5, -2.0},    // roda esquerda
                             {+0.0, +8.0}};   // linha de sensores
 double wheelsRadius = 2.0, actingTime = 0.5;
+mathModel mm(carVector, wheelsRadius, actingTime, nullptr);              
 
 void setup() {
     Serial.begin(115200);
     ls.begin();
-    mm.begin(carVector, wheelsRadius, actingTime);
 
     // a linha tem 5.7 centimetros com 8 sensores
     for(int i = 0; i < 8; i++)
@@ -43,10 +43,10 @@ void loop() {
     timer = micros(); // salva o tempo
     
     // calcula o setPoint de cada roda em cm/s
-    double* wheelsSetPoint = mm.calculateSetPoints(lineDistance);
+    mm.calculateSetPoints(lineDistance);
 
     // resultados
-    Serial.printf("erro: %.2f\tr1: %.3frps\tr2: %.3frps\ttempo: %d micros\n", 
-                                lineDistance, wheelsSetPoint[0], wheelsSetPoint[1], micros() - timer);
+    //Serial.printf("erro: %.2f\tr1: %.3frps\tr2: %.3frps\ttempo: %d micros\n", 
+    //                            lineDistance, wheelsSetPoint[0], wheelsSetPoint[1], micros() - timer);
     delay(100);
 }

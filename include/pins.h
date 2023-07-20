@@ -30,7 +30,6 @@ extern uint8_t pinos[], pinCount;
 
 void definePins(){
     pinMode(led, OUTPUT);
-    digitalWrite(led, LOW); // desliga o led
     pinMode(left, INPUT);
     pinMode(right, INPUT);
     pinMode(enc1, INPUT);
@@ -46,6 +45,15 @@ void definePins(){
     pinMode(pwma, OUTPUT);
     pinMode(pwmb, OUTPUT);
 
+    // right
+    pinMode(pwma, OUTPUT);
+    ledcSetup(1, 5000, 12); // canal para esquerdo
+    ledcAttachPin(pwma, 1);
+
+    // left
+    pinMode(pwmb, OUTPUT);
+    ledcSetup(0, 5000, 12); // canal para esquerdo
+    ledcAttachPin(pwmb, 0);
    /*
    #ifdef IR
         pinMode(IR, OUTPUT);

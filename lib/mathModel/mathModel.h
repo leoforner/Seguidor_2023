@@ -7,18 +7,17 @@
 // de preferencia radianos e centimetros (que foi usado nos testes)
 class mathModel {
     public:
-        /**
-         * inicia a biblioteca com os dados do carrinho
-        */
-        void begin(double carVector[3][2], double wheelsRadius, double actingTime);
+        mathModel(double carVector[3][2], double wheelsRadius, double actingTime, double * wheelsSpeed);
+        ~mathModel();
         /**
          * define o setPoint de velocidade de cada roda de 
          * acordo com a distancia do sensor em relação
          * a linha
         */
-        double* calculateSetPoints(double lineDistance);
+        void calculateSetPoints(double lineDistance);
         void setVerb(bool verb);
     private:
+        double * wheelsSpeed;
         /**
          * cordenas X Y
          * carVector[linhas][xy]
@@ -34,7 +33,7 @@ class mathModel {
          * 
          * raio das rodas
         */
-        double wheelsSpeed[2], wheelsRadius;
+        double wheelsRadius;
         /** 
          * velocidade angular e velocidade translacional
          * do carrinho

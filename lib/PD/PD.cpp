@@ -37,7 +37,7 @@ void PD::printConfig(){
     Serial.printf("Constantes translacionais: \nkp = %f\nkd = %f \n\n", kdt, kdt);
 }
 
-int32_t PD::simplePI1(double kp, double ki, double error, int32_t limit){
+int32_t PD::rightPI(double kp, double ki, double error, int32_t limit){
     // calcula quanto tempo passou desde o ultimo calculo
     float t = (millis() - lastTime[1])/1000.0;
     lastTime[1] = millis();
@@ -46,40 +46,33 @@ int32_t PD::simplePI1(double kp, double ki, double error, int32_t limit){
     double P = kp * error;
     
     // integral 
-    double I = (sumError[0] * ki) * t;
+    double I = ((error - lastError[0]) * ki) * t;
 
     // garante que a integral nao sature
-    if((I >= limit) && (error >= 0)){
-        I = limit;
-    }else if((I <= -limit) && (error <= 0)){
-        I = -limit;
-    }else{
-        sumError[0] += error;
-    }
-
-    // soma tudo 
-    int32_t PI_ = P + I;
-
-    // garante que o PID nao sature
-    if(PI_ > limit){
-        PI_ = limit;
-    }else if(PI_ < -limit){
-        PI_ = -limit;
-    }
-
-    if(verb){
-        Serial.printf("Tempo: %f \t", t);
-        Serial.printf("P: %f \t I: %f\t", P, I);
-        Serial.printf("PI: %d \t", PI_);
-        Serial.printf("Erro somado: %d \t Erro passado: %d, \t Erro: %d \n", sumError, lastError, error);
-    }
+    if(I >= limit/2)        I = limit/2;
+    else if (I <= -limit/2) I = -limit/2;
+    //else                    sumError[0] += error;
 
     // salva o ultimo erro
     lastError[0] = error;
 
-    return PI_;
+    pi1 += (P + I);
+
+    if(pi1 >= limit)
+        pi1 = limit;
+    else if(pi1 <= -limit)
+        pi1 = -limit;
+
+    if(verb){
+        Serial.printf("Tempo: %.2f\t", t);
+        Serial.printf("P: %.2f\t I: %.2f\t", P, I);
+        Serial.printf("PI: %d\t", pi1);
+        Serial.printf("Erro passado: %.2f,\t Erro: %.2f\n", lastError[0], error);
+    }
+
+    return pi1;
 }
-int32_t PD::simplePI2(double kp, double ki, double error, int32_t limit){
+int32_t PD::leftPI(double kp, double ki, double error, int32_t limit){
     // calcula quanto tempo passou desde o ultimo calculo
     float t = (millis() - lastTime[2])/1000.0;
     lastTime[2] = millis();
@@ -88,38 +81,31 @@ int32_t PD::simplePI2(double kp, double ki, double error, int32_t limit){
     double P = kp * error;
     
     // integral 
-    double I = (sumError[1] * ki) * t;
+    double I = ((error - lastError[1]) * ki) * t;
 
     // garante que a integral nao sature
-    if((I >= limit) && (error >= 0)){
-        I = limit;
-    }else if((I <= -limit) && (error <= 0)){
-        I = -limit;
-    }else{
-        sumError[1] += error;
-    }
-
-    // soma tudo 
-    int32_t PI_ = P + I;
-
-    // garante que o PID nao sature
-    if(PI_ > limit){
-        PI_ = limit;
-    }else if(PI_ < -limit){
-        PI_ = -limit;
-    }
-
-    if(verb){
-        Serial.printf("Tempo: %f \t", t);
-        Serial.printf("P: %f \t I: %f\t", P, I);
-        Serial.printf("PI: %d \t", PI_);
-        Serial.printf("Erro somado: %d \t Erro passado: %d, \t Erro: %d \n", sumError, lastError, error);
-    }
+    if(I >= limit/2)        I = limit/2;
+    else if (I <= -limit/2) I = -limit/2;
+    //else                    sumError[1] = lastError;
 
     // salva o ultimo erro
     lastError[1] = error;
+    
+    pi2 += (P + I);
 
-    return PI_;
+    if(pi2 >= limit)
+        pi2 = limit;
+    else if(pi2 <= -limit)
+        pi2 = -limit;
+
+    if(verb){
+        Serial.printf("Tempo: %.2f\t", t);
+        Serial.printf("P: %.2f \t I: %.2f\t", P, I);
+        Serial.printf("PI: %d\t", pi2);
+        Serial.printf("Erro passado: %.2f,\t Erro: %.2f\n", lastError[1], error);
+    }
+
+    return pi2;
 }
 
 int32_t PD::simplePD1(double kp, double kd, int32_t error, int32_t limit){
@@ -147,7 +133,7 @@ int32_t PD::simplePD1(double kp, double kd, int32_t error, int32_t limit){
         Serial.printf("Tempo: %f \t", t);
         Serial.printf("P: %f \t D: %f \t", P, D);
         Serial.printf("PD: %d \t", P_D);
-        Serial.printf("Erro somado: %d \t Erro passado: %d, \t Erro: %d \n", sumError, lastError, error);
+        Serial.printf("Erro passado: %d, \t Erro: %d \n", lastError, error);
     }
 
     // salva o ultimo erro
@@ -181,7 +167,7 @@ int32_t PD::simplePD2(double kp, double kd, int32_t error, int32_t limit){
         Serial.printf("Tempo: %f \t", t);
         Serial.printf("P: %f \t D: %f \t", P, D);
         Serial.printf("PD: %d \t", P_D);
-        Serial.printf("Erro somado: %d \t Erro passado: %d, \t Erro: %d \n", sumError, lastError, error);
+        Serial.printf("Erro passado: %d, \t Erro: %d \n", lastError, error);
     }
 
     // salva o ultimo erro
@@ -206,9 +192,9 @@ int32_t PD::calcPD(uint8_t mode, int32_t error, int32_t limit){
 int32_t PD::calcPI(uint8_t mode, int32_t error, int32_t limit){
     switch (mode){
     case MOTOR_LEFT:
-        return simplePI1(kple, kile, error, limit);
+        return rightPI(kple, kile, error, limit);
     case MOTOR2_RIGHT:
-        return simplePI2(kpri, kiri, error, limit);
+        return leftPI(kpri, kiri, error, limit);
 
     default:
         Serial.println("Modo não encontrado!"); 
