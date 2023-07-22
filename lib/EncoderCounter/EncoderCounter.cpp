@@ -45,10 +45,9 @@ double EncoderCounter:: getRPS() {
   uint32_t timeInterval = now - pastTime;
   pcnt_get_counter_value(COUNTER_UNIT, &PULSES);
     if(PULSES <=0){
-      if(now - pastTime >= 30000){ // micro segundos
+      if(now - pastTime >= 30000){
         currentVelocity = 0;  //se já faz mais de X tempo desde a ultima vez que eu medi a velocidade e ainda tá dando 0 pulso, então provavelmente o carrinho tá parado
       }
-      pastTime = micros();
       return currentVelocity;
     }else if (timeInterval <= 0){
       return currentVelocity;
@@ -58,6 +57,10 @@ double EncoderCounter:: getRPS() {
       pcnt_counter_pause(COUNTER_UNIT);
       pcnt_counter_clear(COUNTER_UNIT);
       pcnt_counter_resume(COUNTER_UNIT);
+
+      // invercia da roda
+      if((now - inverte) <= 70000) return 0.0;
+
       return filtro(currentVelocity);
     }
 } 
@@ -91,6 +94,7 @@ void EncoderCounter:: setFiltroCostant(double r){
 }
 void EncoderCounter:: limpaCounter()
 {
+  inverte = micros();
   pcnt_counter_pause(COUNTER_UNIT);
   pcnt_counter_clear(COUNTER_UNIT);
   pcnt_counter_resume(COUNTER_UNIT);

@@ -3,30 +3,60 @@
 
 #include <Arduino.h>
 
-// analogicos
-#define left 34
-#define right 36
-#define divTensao 39
-// botoes
-#define enc1 18
-#define enc2 19
-#define enc3 21
-#define enc4 22
-#define start 23
-// motor 1
-#define pwma 5
-#define ain2 2
-#define ain1 15
-// motor 2
-#define pwmb 17
-#define bin1 16
-#define bin2 4 
-// sensores frontais
-#define IR 34
-extern uint8_t pinos[], pinCount;
+#define FRANK
 
-// led
-#define led 2
+#ifdef FRANK 
+    // analogicos
+    #define left 34
+    #define right 36
+    #define divTensao 39
+    // botoes
+    #define enc1 18
+    #define enc2 19
+    #define enc3 21
+    #define enc4 22
+    #define start 23
+    // motor 1
+    #define pwma 5
+    #define ain2 15
+    #define ain1 2
+    // motor 2
+    #define pwmb 17
+    #define bin1 4
+    #define bin2 16 
+    // sensores frontais
+    #define IR 35
+    // led
+    #define led 2
+#endif
+
+#ifdef FOMINHA
+    // analogicos
+    #define left 39
+    #define right 36
+    #define divTensao 13
+
+    // botoes
+    #define enc1 23
+    #define enc2 22
+    #define enc3 5
+    #define enc4 18
+    #define start 19
+
+    // motor 1
+    #define pwma 15
+    #define ain2 2
+    #define ain1 0
+
+    // motor 2
+    #define pwmb 17
+    #define bin1 4
+    #define bin2 16 
+    #define led 21 // cuidado pino IR 
+#endif
+
+    extern uint8_t pinos[], pinCount;
+    extern uint8_t channelLeft, channelRight;
 
 void definePins(){
     pinMode(led, OUTPUT);
@@ -47,18 +77,17 @@ void definePins(){
 
     // right
     pinMode(pwma, OUTPUT);
-    ledcSetup(1, 5000, 12); // canal para esquerdo
-    ledcAttachPin(pwma, 1);
+    ledcSetup(channelRight, 5000, 12); // canal para esquerdo
+    ledcAttachPin(pwma, channelRight);
 
     // left
     pinMode(pwmb, OUTPUT);
-    ledcSetup(0, 5000, 12); // canal para esquerdo
-    ledcAttachPin(pwmb, 0);
-   /*
+    ledcSetup(channelLeft, 5000, 12); // canal para esquerdo
+    ledcAttachPin(pwmb, channelLeft);
+   
    #ifdef IR
-        pinMode(IR, OUTPUT);
+        pinMode(IR, INPUT);
     #endif
-   */
 }
 
 #endif

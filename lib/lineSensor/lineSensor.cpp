@@ -196,7 +196,7 @@ void lineSensor::setMaxAndMinDi(){
     digitalWrite(led, HIGH);
     if(verb)
         Serial.println("Passe o sensor sobre a linha e o tapete enquanto o led está acesso para definir o branco e preto de cada sensor.");
-    while((millis() - start) < 5000){
+    while((millis() - start) < 2000){
         for(uint8_t i = 0; i < sensorCount; i++){
             int x = read(i);  
             if(x > maximum[i])

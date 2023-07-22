@@ -1,14 +1,15 @@
 // bibliotecas
-#include <Arduino.h>
-#include <lineSensor.h>
 #include <EncoderCounter.h>
+#include <lineSensor.h>
 #include <mathModel.h>
+#include <Arduino.h>
 #include <PD.h>
 
 // includes
-#include "pins.h"
 #include "adc.h"
+#include "pins.h"
 #include "times.h"
+#include "wheels.h"
 #include "exceptions.h"
 
 uint8_t state = 0;        // estados do carrinho 
@@ -17,9 +18,16 @@ uint8_t state = 0;        // estados do carrinho
 // 2 e 3 pista
 // 4 final da pista
 
-// sensores frontais
-uint8_t pinos[] = {32, 33, 25, 26, 27, 14, 12, 13}, pinCount = 8;
-lineSensor sensorFrontal(pinCount, pinos, true);
+// sensores frontais (defina o carrinho em pins.h)
+#ifdef FRANK
+    uint8_t pins[] = {32, 33, 25, 26, 27, 14, 12, 13}, pinCount = 8;
+#endif
+
+#ifdef FOMINHA
+    uint8_t pins[] = {35, 32, 33, 25, 26, 27, 14, 12}, pinCount = 8;
+#endif
+
+lineSensor forwardSensor(pinCount, pins, true);
 
 // modelo matematico do carrinho
                              // X    Y
@@ -28,14 +36,22 @@ double carVector[3][2] =   {{+7.5, -2.0},    // roda direita
                             {+0.0, 11.0}};   // linha de sensores
 double wheelsRadius = 1.5, actingTime = 1;
 double* wheelsSetPoint = new double[2];
-mathModel modeloMatematico(carVector, wheelsRadius, actingTime, wheelsSetPoint);                 
+mathModel carModel(carVector, wheelsRadius, actingTime, wheelsSetPoint);                 
 
 // controle do carrinho
-PD controle(1, 1, 1, 1);
+PD control(1, 1, 1, 1);
 
 // contadores do encoder
 EncoderCounter encoderLeft(enc3, PCNT_UNIT_0, 140, 1000);
 EncoderCounter encoderRight(enc1, PCNT_UNIT_1, 140, 1000);
+
+// rodas
+wheels wheelLeft;
+wheels wheelRiht;
+
+// canais pwm (precisa definir para definir em pins.h)
+uint8_t channelLeft = 0;
+uint8_t channelRight = 1;
 
 void setup(){
     Serial.begin(115200);
@@ -44,6 +60,21 @@ void setup(){
     // filtro passa baixa 
     encoderLeft.setFiltroCostant(0.01);
     encoderRight.setFiltroCostant(0.01);
+
+    // define as propriedades das rodas
+    wheelLeft.enc = &encoderLeft;
+    wheelLeft.mov = STOPPED;
+    wheelLeft.velocity = 0.0;
+    wheelLeft.l1 = bin1;
+    wheelLeft.l2 = bin2;
+    wheelLeft.channelPWM = channelLeft;
+
+    wheelRiht.enc = &encoderRight;
+    wheelRiht.mov = STOPPED;
+    wheelRiht.velocity = 0.0;
+    wheelRiht.l1 = ain1;
+    wheelRiht.l2 = ain2;
+    wheelRiht.channelPWM = channelRight;
 
     // anexa as interrupcoes ao segundo nucleo
     xTaskCreatePinnedToCore(
@@ -59,9 +90,9 @@ void setup(){
     Serial.println("Carrinho ligado, pressione o botao para iniciar calibração");
     while(state < 1) delay(10);
 
-    Serial.println("Calibrando...");
-    sensorFrontal.begin();
-    sensorFrontal.setLed(led);
+    /*Serial.println("Calibrando...");
+    forwardSensor.begin();
+    forwardSensor.setLed(led);
 
     // a linha tem 5.7 centimetros com 8 sensores
     // altera o peso padrao para calcular a distancia da linha
@@ -69,70 +100,53 @@ void setup(){
     // divindo por 100 a medida passa para centimetros
     float pesos[8];
     for(int i = 0; i < 8; i++) pesos[i] = i * 5.7/7; 
-    sensorFrontal.setweights(pesos);
-    sensorFrontal.setTrackCharacteristics(100, 0, 30);
+    forwardSensor.setweights(pesos);
+    forwardSensor.setTrackCharacteristics(100, 0, 30);
     
-    sensorFrontal.calibration(STATIC);
-    sensorFrontal.printConfig();
+    forwardSensor.calibration(DYNAMIC);
+    forwardSensor.printConfig();
 
     Serial.println("Sensor calibrado, pressione o botao para iniciar trajeto");
-    while(state < 2) delay(10);
+    while(state < 2) delay(10);*/
 
     // sinalização piscando led
     delay(100);
     for(uint8_t i = 0; i < 4; i++){
     digitalWrite(led, HIGH);
+
     delay(100);
     digitalWrite(led, LOW);
     delay(800);
     }
-
-    digitalWrite(ain1, HIGH);
-    digitalWrite(ain2, LOW);
-    digitalWrite(bin1, HIGH);
-    digitalWrite(bin2, LOW);
 }
 
 void loop(){
-    // distancia entre o sensor e a linha em cm
-    double distanciaLinha = (sensorFrontal.searchLine(&state)/100.0) - 5.70/2.0;
+    double distanciaLinha = (forwardSensor.searchLine(&state)/100.0) - 5.70/2.0;
 
     // calcula o setPoint de cada roda em cm/s
-    modeloMatematico.calculateSetPoints(distanciaLinha);
-
-    // resultados
-    //Serial.printf("erro: %.2f\tr1: %.3frps\tr2: %.3frps\t", distanciaLinha, wheelsSetPoint[0], wheelsSetPoint[1]);
+    carModel.calculateSetPoints(distanciaLinha);
 
     // velocidade dos motores
     double velRight = encoderRight.getRPS();
     double velLeft = encoderLeft.getRPS();
-    //Serial.printf("Right: %.2frps\tLeft: %.2frps\t", velRight, velLeft);
 
-    float erro1 = 10 - velRight;//wheelsSetPoint[0] - velRight;
-    float erro2 = 5 - velLeft;//wheelsSetPoint[1] - velLeft;
+    float erro1 = wheelsSetPoint[0] - velRight;
+    float erro2 = wheelsSetPoint[1] - velLeft;
 
     // pid para a roda
-    int32_t pwmSaida1 = controle.rightPI(50, 1, erro1, 4095);
-    int32_t pwmSaida2 = controle.leftPI(50, 1, erro2, 4095);
+    int32_t pwmSaida1 = control.rightPI(50, 1, erro1, 4095);
+    int32_t pwmSaida2 = control.leftPI(50, 1, erro2, 4095);
 
     // calcula pwm max (correspondente a 6v)
     float tensaoBateria = (analogicoParaTensao(analogRead(divTensao)))*7.6/1.92; //7.6v viram 1.92v (divisor de tensão)
     int pwm_6volts = (6.0*4095)/tensaoBateria;
     if(pwm_6volts > 4095) pwm_6volts = 4095;
 
-    Serial.println(analogRead(divTensao));
-
     // monitor serial
-    //Serial.printf("right: %.2f\tleft: %.2f\tpwma: %d\tVelRight: %.2f\t", wheelsSetPoint[1], wheelsSetPoint[0], pwmSaida1, velRight);
-    //Serial.printf("pwmb: %d\tvelLeft: %.2f\n", pwmSaida2, velLeft);
-
-
+    Serial.printf("Left: %.4f\tRight: %.4f\tsetpoints: %.4f - %.4f\terros: %.4f - %.4f\tpwms: %d - %d\n", 
+                    velLeft, velRight, wheelsSetPoint[0], wheelsSetPoint[1], erro2, erro1, pwmSaida2, pwmSaida1);
     // plotagem
     //Serial.printf("%.2f, %.2f, %.2f, %.2f\n", wheelsSetPoint[0], wheelsSetPoint[1], velLeft, velRight);
-
-    //ledcWrite(0, pwmSaida1);
-    //ledcWrite(1, pwmSaida2);
-
-    // controle entra aqui
-    delay(1);
+    
+    delay(50);
 }
