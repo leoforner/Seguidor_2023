@@ -17,6 +17,10 @@ class mathModel {
         void calculateSetPoints(double lineDistance);
         void setVerb(bool verb);
     private:
+        /*
+            [0] left
+            [1] right
+        */
         double * wheelsSpeed;
         /**
          * cordenas X Y

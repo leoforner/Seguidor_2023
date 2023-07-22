@@ -1,4 +1,5 @@
 // bibliotecas
+#include <BluetoothSerial.h>
 #include <EncoderCounter.h>
 #include <lineSensor.h>
 #include <mathModel.h>
@@ -12,6 +13,10 @@
 #include "wheels.h"
 #include "exceptions.h"
 
+// serial bluetooth
+BluetoothSerial SerialBT;
+double position;
+
 uint8_t state = 0;        // estados do carrinho 
 // 0 desligado
 // 1 calibrando
@@ -20,7 +25,9 @@ uint8_t state = 0;        // estados do carrinho
 
 // sensores frontais (defina o carrinho em pins.h)
 #ifdef FRANK
-    uint8_t pins[] = {32, 33, 25, 26, 27, 14, 12, 13}, pinCount = 8;
+    uint8_t pins[] = {13, 12, 14, 27, 26, 25, 33, 32}, pinCount = 8;
+    // {32, 33, 25, 26, 27, 14, 12, 13}
+    // {13, 12, 14, 27, 26, 25, 33, 32}
 #endif
 
 #ifdef FOMINHA
@@ -34,7 +41,7 @@ lineSensor forwardSensor(pinCount, pins, true);
 double carVector[3][2] =   {{+7.5, -2.0},    // roda direita
                             {-7.5, -2.0},    // roda esquerda
                             {+0.0, 11.0}};   // linha de sensores
-double wheelsRadius = 1.5, actingTime = 1;
+double wheelsRadius = 1.5, actingTime = 0.8;
 double* wheelsSetPoint = new double[2];
 mathModel carModel(carVector, wheelsRadius, actingTime, wheelsSetPoint);                 
 
@@ -46,20 +53,15 @@ EncoderCounter encoderLeft(enc3, PCNT_UNIT_0, 140, 1000);
 EncoderCounter encoderRight(enc1, PCNT_UNIT_1, 140, 1000);
 
 // rodas
-wheels wheelLeft;
-wheels wheelRiht;
+wheels wheelLeft, wheelRiht;
 
 // canais pwm (precisa definir para definir em pins.h)
-uint8_t channelLeft = 0;
-uint8_t channelRight = 1;
+uint8_t channelLeft = 0, channelRight = 1;
 
 void setup(){
     Serial.begin(115200);
     definePins();
-
-    // filtro passa baixa 
-    encoderLeft.setFiltroCostant(0.01);
-    encoderRight.setFiltroCostant(0.01);
+    SerialBT.begin("FRANK");
 
     // define as propriedades das rodas
     wheelLeft.enc = &encoderLeft;
@@ -76,6 +78,14 @@ void setup(){
     wheelRiht.l2 = ain2;
     wheelRiht.channelPWM = channelRight;
 
+    // aplica o pwm nos motores
+    applyPWM(&wheelLeft, 0);
+    applyPWM(&wheelRiht, 0);
+
+    // filtro passa baixa 
+    encoderLeft.setFiltroCostant(0.01);
+    encoderRight.setFiltroCostant(0.01);
+
     // anexa as interrupcoes ao segundo nucleo
     xTaskCreatePinnedToCore(
         interrupt,
@@ -90,7 +100,7 @@ void setup(){
     Serial.println("Carrinho ligado, pressione o botao para iniciar calibração");
     while(state < 1) delay(10);
 
-    /*Serial.println("Calibrando...");
+    Serial.println("Calibrando...");
     forwardSensor.begin();
     forwardSensor.setLed(led);
 
@@ -107,35 +117,32 @@ void setup(){
     forwardSensor.printConfig();
 
     Serial.println("Sensor calibrado, pressione o botao para iniciar trajeto");
-    while(state < 2) delay(10);*/
+    while(state < 2) delay(10);
 
     // sinalização piscando led
     delay(100);
     for(uint8_t i = 0; i < 4; i++){
     digitalWrite(led, HIGH);
-
     delay(100);
     digitalWrite(led, LOW);
-    delay(800);
+    delay(500);
     }
 }
 
 void loop(){
-    double distanciaLinha = (forwardSensor.searchLine(&state)/100.0) - 5.70/2.0;
+    // calcula a posição da linha
+    position = (forwardSensor.searchLine(&state)/100.0) - (5.70/2.0);
 
     // calcula o setPoint de cada roda em cm/s
-    carModel.calculateSetPoints(distanciaLinha);
+    carModel.calculateSetPoints(position);
 
     // velocidade dos motores
-    double velRight = encoderRight.getRPS();
-    double velLeft = encoderLeft.getRPS();
+    getVelocity(&wheelLeft);
+    getVelocity(&wheelRiht);
 
-    float erro1 = wheelsSetPoint[0] - velRight;
-    float erro2 = wheelsSetPoint[1] - velLeft;
-
-    // pid para a roda
-    int32_t pwmSaida1 = control.rightPI(50, 1, erro1, 4095);
-    int32_t pwmSaida2 = control.leftPI(50, 1, erro2, 4095);
+    // pi para as rodas
+    int32_t pwmLeft = control.leftPI(50, 10, wheelsSetPoint[0] - wheelLeft.velocity, 4095);
+    int32_t pwmRight = control.rightPI(50, 10, wheelsSetPoint[1] - wheelRiht.velocity, 4095);
 
     // calcula pwm max (correspondente a 6v)
     float tensaoBateria = (analogicoParaTensao(analogRead(divTensao)))*7.6/1.92; //7.6v viram 1.92v (divisor de tensão)
@@ -143,10 +150,15 @@ void loop(){
     if(pwm_6volts > 4095) pwm_6volts = 4095;
 
     // monitor serial
-    Serial.printf("Left: %.4f\tRight: %.4f\tsetpoints: %.4f - %.4f\terros: %.4f - %.4f\tpwms: %d - %d\n", 
-                    velLeft, velRight, wheelsSetPoint[0], wheelsSetPoint[1], erro2, erro1, pwmSaida2, pwmSaida1);
+    //Serial.printf("position: %.3f\twheelsSetPoints: %.3f - %.3f\tvel rigth: %.3f\t vel left: %.3f\tpwms: %d - %d\n", 
+    //                    position, wheelsSetPoint[1], wheelsSetPoint[0], wheelRiht.velocity, wheelLeft.velocity, pwmRight, pwmLeft);
+
+    // aplica o pwm nos motores
+    applyPWM(&wheelLeft, pwmLeft);
+    applyPWM(&wheelRiht, pwmRight);
+
     // plotagem
-    //Serial.printf("%.2f, %.2f, %.2f, %.2f\n", wheelsSetPoint[0], wheelsSetPoint[1], velLeft, velRight);
-    
-    delay(50);
+    Serial.printf("%.2f, %.2f, %.2f, %.2f\n", position, wheelsSetPoint[1], wheelLeft.velocity,  wheelRiht.velocity);
+
+    delay(1);
 }

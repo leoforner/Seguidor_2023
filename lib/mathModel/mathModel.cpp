@@ -22,7 +22,7 @@ void mathModel::setVerb(bool verb){
 void mathModel::calculateSetPoints(double lineDistance){
     // atan2 da distancia da linha com a distancia do sensor frontal
     // para calcularmos o angulo entre o eixo do carrinho e a linha
-    double peta = (atan2(lineDistance, carVector[2][1]))*2;
+    double peta = (atan2(lineDistance, carVector[2][1]))*6;
 
     // calculamos as velocidade totais do carrinho
     omegaCar = peta/actingTime;

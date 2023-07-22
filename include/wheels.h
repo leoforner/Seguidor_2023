@@ -48,4 +48,21 @@ void changeDirection(wheels * wheel, movement mov){
     //wheel.velocity = wheel.enc->getRPS();
 }
 
+void applyPWM(wheels * wheel, int32_t pwm){
+    // define a direção
+    movement mov = STOPPED;
+    if(pwm > 0) mov = FORWARD;
+    if(pwm < 0) mov = BACKWARD;
+
+    // muda a direção
+    if(wheel->mov != mov) changeDirection(wheel, mov);
+
+    // aplica o pwm
+    ledcWrite(wheel->channelPWM, abs(pwm));
+}
+
+void getVelocity(wheels * wheel){
+    wheel->velocity = wheel->enc->getRPS();
+}
+
 #endif

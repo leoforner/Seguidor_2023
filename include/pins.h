@@ -1,7 +1,8 @@
 #ifndef PINS_H
 #define PINS_H
-
+#include <BluetoothSerial.h>
 #include <Arduino.h>
+#include "wheels.h"
 
 #define FRANK
 
@@ -54,12 +55,20 @@
     #define bin2 16 
     #define led 21 // cuidado pino IR 
 #endif
-
+    // sensor frontal
     extern uint8_t pinos[], pinCount;
+
+    // canais pwm
     extern uint8_t channelLeft, channelRight;
+
+    // rodas
+    extern wheels wheelLeft, wheelRiht;
+
+    extern BluetoothSerial SerialBT;
 
 void definePins(){
     pinMode(led, OUTPUT);
+    digitalWrite(led, LOW);
     pinMode(left, INPUT);
     pinMode(right, INPUT);
     pinMode(enc1, INPUT);
@@ -84,10 +93,6 @@ void definePins(){
     pinMode(pwmb, OUTPUT);
     ledcSetup(channelLeft, 5000, 12); // canal para esquerdo
     ledcAttachPin(pwmb, channelLeft);
-   
-   #ifdef IR
-        pinMode(IR, INPUT);
-    #endif
 }
 
 #endif
