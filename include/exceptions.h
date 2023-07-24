@@ -7,46 +7,68 @@
 
 extern uint8_t state;
 extern double position;
+extern int32_t pid;
+extern double kp, ki, kd;
+extern uint32_t speed;
 uint32_t timeFilter = 100;
 
 static void IRAM_ATTR change_state(){
     if((millis() - timeFilter) > 200){
         if(state < 4) { // avança o estado
             state++; 
-            Serial.println("next"); 
         }else{         // reseta a esp
             Serial.println("Esp reset - state 4");
             applyPWM(&wheelLeft, 0);
-            applyPWM(&wheelRiht, 0);
+            applyPWM(&wheelRight, 0);
             ESP.restart();    
         }
         timeFilter = millis();
     }
 }
 
+void recebeDados(String * texto){
+    // recebe as chars e soma em um texto
+    char a = SerialBT.read();
+    *texto += a;
+
+    // separa as constantes quando recebe o texto todo
+    if(a == '}'){
+        // Use sscanf para ler os valores da string formatada
+        //Serial.println(*texto);
+        int count = sscanf((*texto).c_str(), "{%lf,%lf,%lf,%d}", &kp, &ki, &kd, &speed);
+
+        // Verifica se todos os quatro valores foram lidos corretamente
+        /*if (count != 4) {
+            // Algo deu errado na leitura da string
+            SerialBT.println("Erro ao ler os valores da string.");
+        }else{
+            SerialBT.printf("Constantes alteradas.\nkp: %.3f\nki: %.3f\nkd: %.3f\nspeed: %d\n", kp, ki, kd, speed);
+        }*/
+    }
+
+    // reseta a variavel
+    if(a == '\r' || a == '\n'){
+        *texto = "";
+    }
+}
+
 void IRAM_ATTR interrupt(void * param){
     attachInterrupt(digitalPinToInterrupt(start), change_state, HIGH);
-    //attachInterrupt(digitalPinToInterrupt(right), change_state, LOW);
-    //attachInterrupt(digitalPinToInterrupt(left), change_state, LOW);
-
-    // pino 36 e 39 nao suportam interrupt
-    // ficamos verificando os senores laterais sempre
-    while(1){
-    /*if(!analogRead(right) && state > 1){
-        // delay de 100 millis para esperar o loop principal subtrair 1,
-        // senao somamos antes do loop considerar intersec.
-        // podemos mudar esses 100 millis para menos, porem depende do tempo total de cada loop
-        while(!analogRead(right)) delay(100);
-        change_state();
-    }*/
-        
-        // senao ele envia os dados para montar o grafico
-        delay(150);
-        // caso queirm mudar oq ele envia mude aqui
-        SerialBT.printf("{%.4f}", position);
-        delay(5);
+    static String texto = "";
+    while(1){        
+        // caso ele receba algum dado ele altera as constantes 
+        if(SerialBT.available()){
+            recebeDados(&texto);
+        }else{
+            // senao ele envia os dados para montar o grafico
+            delay(10);
+            // caso queirm mudar oq ele envia mude aqui
+            //SerialBT.printf("{%d}\n", pid);
+        } 
+        delay(10);
     }
     //vTaskDelete(NULL);
 }
+
 
 #endif

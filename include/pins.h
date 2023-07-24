@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include "wheels.h"
 
-#define FRANK
+#define FOMINHA
 
 #ifdef FRANK 
     // analogicos
@@ -51,9 +51,9 @@
 
     // motor 2
     #define pwmb 17
-    #define bin1 4
-    #define bin2 16 
-    #define led 21 // cuidado pino IR 
+    #define bin1 16
+    #define bin2 4 
+    #define led 21 // cuidado, pino IR 
 #endif
     // sensor frontal
     extern uint8_t pinos[], pinCount;
@@ -62,8 +62,9 @@
     extern uint8_t channelLeft, channelRight;
 
     // rodas
-    extern wheels wheelLeft, wheelRiht;
+    extern wheels wheelLeft, wheelRight;
 
+    // serial bt
     extern BluetoothSerial SerialBT;
 
 void definePins(){
