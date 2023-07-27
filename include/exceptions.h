@@ -5,22 +5,41 @@
 #include "wheels.h"
 #include <Arduino.h>
 
-extern uint8_t state;
+#ifndef MEU_ENUM_H
+#define MEU_ENUM_H
+
+enum stt {
+    OFF = -1,
+    CONNECT = 0,
+    CALIBR1 = 1,
+    CALIBR2 = 2,
+    INTERSEC = 3,
+    PISTA = 4,
+    FINAL = 5
+};
+
+#endif
+
+extern uint16_t whiteRight, whiteLeft;
+extern stt state;
 extern double position;
 extern int32_t pid;
 extern double kp, ki, kd;
 extern uint32_t speed;
-uint32_t timeFilter = 100;
+uint32_t timeFilter = 0, delayPlot = 0;
 
 static void IRAM_ATTR change_state(){
     if((millis() - timeFilter) > 200){
-        if(state < 4) { // avança o estado
-            state++; 
-        }else{         // reseta a esp
-            Serial.println("Esp reset - state 4");
+        // avança o estado
+        state = static_cast<stt>(static_cast<int>(state) + 1);   
+        // off
+        if(state == 5) {                
             applyPWM(&wheelLeft, 0);
-            applyPWM(&wheelRight, 0);
-            ESP.restart();    
+            applyPWM(&wheelRight, 0);  
+        // reseta a esp
+        }else if(state > 5){            
+            //Serial.println("Esp reset");
+            ESP.restart();  
         }
         timeFilter = millis();
     }
@@ -31,23 +50,17 @@ void recebeDados(String * texto){
     char a = SerialBT.read();
     *texto += a;
 
-    // separa as constantes quando recebe o texto todo
+    // recebeu a mensagem completa
     if(a == '}'){
-        // Use sscanf para ler os valores da string formatada
-        //Serial.println(*texto);
+        // filtra a string
         int count = sscanf((*texto).c_str(), "{%lf,%lf,%lf,%d}", &kp, &ki, &kd, &speed);
 
-        // Verifica se todos os quatro valores foram lidos corretamente
-        /*if (count != 4) {
-            // Algo deu errado na leitura da string
-            SerialBT.println("Erro ao ler os valores da string.");
-        }else{
-            SerialBT.printf("Constantes alteradas.\nkp: %.3f\nki: %.3f\nkd: %.3f\nspeed: %d\n", kp, ki, kd, speed);
-        }*/
+        // debug
+        //SerialBT.printf("kp: %.3f\nki: %.3f\nkd: %.3f\nspeed: %d\n", kp, ki, kd, speed);
     }
 
     // reseta a variavel
-    if(a == '\r' || a == '\n'){
+    if(a == '\r' || a == '\n' || a == '}'){
         *texto = "";
     }
 }
@@ -57,15 +70,28 @@ void IRAM_ATTR interrupt(void * param){
     static String texto = "";
     while(1){        
         // caso ele receba algum dado ele altera as constantes 
-        if(SerialBT.available()){
-            recebeDados(&texto);
-        }else{
-            // senao ele envia os dados para montar o grafico
-            delay(10);
-            // caso queirm mudar oq ele envia mude aqui
-            //SerialBT.printf("{%d}\n", pid);
-        } 
-        delay(10);
+        if(SerialBT.available()) recebeDados(&texto);
+
+        // caso ele detecte marcação
+        if(analogRead(right) > (whiteRight - (0.3*whiteRight)) && state > 2){
+            if(state == PISTA){ 
+                state = FINAL;
+                vTaskDelete(NULL);  
+            }
+            else{
+                state = PISTA;
+            }
+            digitalWrite(led, !digitalRead(led));         // apaga o led
+            delay(200);
+        }
+
+        // envia o erro para plotagem
+        /*if(millis() - delayPlot > 100 && (state == PISTA || state == INTERSEC)){
+            SerialBT.print("{" + String(pid) + "}");
+            delayPlot = millis();
+        }*/
+
+        delay(1);
     }
     //vTaskDelete(NULL);
 }

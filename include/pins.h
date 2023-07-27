@@ -53,7 +53,7 @@
     #define pwmb 17
     #define bin1 16
     #define bin2 4 
-    #define led 21 // cuidado, pino IR 
+    #define led 21 
 #endif
     // sensor frontal
     extern uint8_t pinos[], pinCount;
