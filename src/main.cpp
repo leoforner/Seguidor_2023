@@ -165,16 +165,16 @@ void loop(){
     else        velLeft = speed + pid;
 
     // calcula pwm max (correspondente a 6v)
-    float tensaoBateria = (analogicoParaTensao(analogRead(divTensao)))*7.6/1.92; //7.6v viram 1.92v (divisor de tensão)
+    float tensaoBateria = (analogicoParaTensao(analogRead(divTensao)))* 3.96; // 7.6/1.92; //7.6v viram 1.92v (divisor de tensão)
     if(tensaoBateria < 7.3) state == OFF; // desliga
     int pwm_6volts = (6.0*4095)/tensaoBateria;
-    if(pwm_6volts > 4095) pwm_6volts = 4095;
+    // if(pwm_6volts > 4095) pwm_6volts = 4095;
 
     // pwm correspondente a 6v
     uint8_t pMorto = 0.2;
 
     if(velRight >= 0)   velRight = map(velRight, 0, speed, pMorto*pwm_6volts, pwm_6volts);
-    else                velRight = map(velRight, -speed, 0, -pwm_6volts, pMorto*pwm_6volts*-1);
+    else                velRight = map(velRight, -speed, 0, -pwm_6volts, -pMorto*pwm_6volts);
 
     if(velLeft >= 0)    velLeft = map(velLeft, 0, speed, pMorto*pwm_6volts, pwm_6volts);
     else                velLeft = map(velLeft, -speed, 0, -pwm_6volts, pMorto*pwm_6volts*-1);

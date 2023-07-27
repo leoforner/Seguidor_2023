@@ -45,7 +45,7 @@ int32_t PD::simplePID(double kp, double ki, double kd, double error, int32_t lim
     double P = kp * error;
     
     // integral 
-    double I = ((error - lastError[4]) * ki) * t;
+    double I = I_ant + (error * ki * t);
 
     // derivativa
     double D = (error - lastError[4])/t * kd;
@@ -56,6 +56,8 @@ int32_t PD::simplePID(double kp, double ki, double kd, double error, int32_t lim
 
     // salva o ultimo erro
     lastError[4] = error;
+
+    I_ant = I;
 
     // soma tudo
     pid = (P + I + D);

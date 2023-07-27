@@ -34,7 +34,7 @@ class PD{
         uint32_t lastTime[5] = {0, 0, 0, 0, 0};
         double kpt = 1, kdt = 1, kpr = 1, kdr = 1;
         double kple = 1, kile = 1, kpri = 1, kiri = 1;
-        double lastError[5] = {0, 0, 0, 0, 0};
+        double lastError[5] = {0, 0, 0, 0, 0}, I_ant = 0;
         bool verb = false;
         int32_t pid, pi1 = 0, pi2 = 0, pd1 = 0, pd2 = 0;
 };
