@@ -20,10 +20,14 @@ uint32_t speed = 3500;
 // valores maximos dos sensores laterais
 uint16_t whiteLeft = 0, whiteRight = 0;
 
+uint8_t contadorIntersec = 0;
+
 // constantes do PID
-double kp = 100, ki = 2, kd = 60;
+double kp = 360, ki = 0.1, kd = 75;
 
 stt state = OFF;
+
+uint32_t begin = 0;
 
 // sensores frontais (defina o carrinho em pins.h)
 #ifdef FRANK
@@ -107,7 +111,9 @@ void setup(){
     while((millis() - time) < 1500){
         if(analogRead(left) > whiteLeft)   whiteLeft = analogRead(left);
         if(analogRead(right) > whiteRight) whiteRight = analogRead(right);  
-    }digitalWrite(led, LOW);
+    }
+    
+    digitalWrite(led, LOW);
 
     SerialBT.println("Sensores calibrados, pressione o botao para iniciar trajeto");
     while(state < 3) delay(10);
@@ -122,6 +128,8 @@ void setup(){
         digitalWrite(led, LOW);
         delay(500);
     }
+
+    begin = millis();
 }
 
 void loop(){
@@ -132,8 +140,18 @@ void loop(){
         brake(&wheelRight);
         return;
     }
+
+    // tenta frear na parte dificil 
+    if(state == INTERSEC && contadorIntersec == 2){
+        applyPWM(&wheelRight, 0); 
+        applyPWM(&wheelLeft, 0);  
+
+        contadorIntersec = 0;
+        return;   
+    }
+
     // calcula a posição da linha
-    position = (forwardSensor.searchLine(&state) - 3500)/100;
+    position = (forwardSensor.searchLine(&state, &contadorIntersec) - 3500)/100;
 
     // calcula o pid
     pid = control.simplePID(kp, ki, kd, position, 2*speed);
@@ -153,8 +171,14 @@ void loop(){
     if(pwm_6volts > 4095) pwm_6volts = 4095;
 
     // pwm correspondente a 6v
-    velRight = map(velRight, -speed, speed, -pwm_6volts, pwm_6volts);
-    velLeft = map(velLeft, -speed, speed, -pwm_6volts, pwm_6volts);
+    uint8_t pMorto = 0.2;
+
+    if(velRight >= 0)   velRight = map(velRight, 0, speed, pMorto*pwm_6volts, pwm_6volts);
+    else                velRight = map(velRight, -speed, 0, -pwm_6volts, pMorto*pwm_6volts*-1);
+
+    if(velLeft >= 0)    velLeft = map(velLeft, 0, speed, pMorto*pwm_6volts, pwm_6volts);
+    else                velLeft = map(velLeft, -speed, 0, -pwm_6volts, pMorto*pwm_6volts*-1);
+
 
     // aplica o pwm
     applyPWM(&wheelRight, velRight); 
