@@ -15,7 +15,7 @@
 BluetoothSerial SerialBT;
 double position;
 int32_t pid = 0;
-uint32_t speed = 3500;
+uint32_t speed = 2800;
 
 // valores maximos dos sensores laterais
 uint16_t whiteLeft = 0, whiteRight = 0;
@@ -23,11 +23,10 @@ uint16_t whiteLeft = 0, whiteRight = 0;
 uint8_t contadorIntersec = 0;
 
 // constantes do PID
-double kp = 360, ki = 0.1, kd = 75;
+double kp = 400, ki = 10, kd = 45;
 
+// inicia o estado do carrinho como off
 stt state = OFF;
-
-uint32_t begin = 0;
 
 // sensores frontais (defina o carrinho em pins.h)
 #ifdef FRANK
@@ -37,19 +36,19 @@ uint32_t begin = 0;
 #endif
 
 #ifdef FOMINHA
-    uint8_t pins[] = {35, 32, 33, 25, 26, 27, 14, 12}, pinCount = 8;
+    uint8_t pins[] = {32, 33, 25, 26, 27, 14}, pinCount = 6;
 #endif
 
 // sensor frontal
 lineSensor forwardSensor(pinCount, pins, true);             
 
-// controle do carrinho
+// controle do carrinho (usamos apenas simplePID)
 PD control(1, 1, 1, 1);
 
 // rodas
 wheels wheelLeft, wheelRight;
 
-// canais pwm (precisa definir para definir em pins.h)
+// canais pwm (precisa definir aqui para definir em pins.h)
 uint8_t channelLeft = 0, channelRight = 1;
 
 void setup(){
@@ -58,17 +57,17 @@ void setup(){
     SerialBT.begin("FOMINHA");
 
     // define as propriedades das rodas
-    wheelLeft.mov = STOPPED;
+    wheelLeft.mov = STOPPED;    // inicia como parada
     wheelLeft.l1 = bin1;
     wheelLeft.l2 = bin2;
     wheelLeft.channelPWM = channelLeft;
 
-    wheelRight.mov = STOPPED;
+    wheelRight.mov = STOPPED;   // inicia como parada
     wheelRight.l1 = ain1;
     wheelRight.l2 = ain2;
     wheelRight.channelPWM = channelRight;
 
-    // aplica o pwm nos motores
+    // manda pwm zero nos motores (quando a esp reseta estava salvando o ultimo pwm aplicado)
     applyPWM(&wheelLeft, 0);
     applyPWM(&wheelRight, 0);
 
@@ -94,7 +93,7 @@ void setup(){
         delay(1000);
     }
 
-    //SerialBT.println("Carrinho ligado, pressione o botao para iniciar calibração do sensor frontal");
+    SerialBT.println("Carrinho ligado, pressione o botao para iniciar calibração do sensor frontal");
     while(state < 1) delay(10);
 
     // calibra o sensor frontal
@@ -128,51 +127,41 @@ void setup(){
         digitalWrite(led, LOW);
         delay(500);
     }
-
-    begin = millis();
 }
 
 void loop(){
     // final da pista
     if(state == FINAL || state == OFF){
-        // para
+        // freia as rodas para parar inercia do carrinho
         brake(&wheelLeft);
         brake(&wheelRight);
         return;
     }
 
-    // tenta frear na parte dificil 
-    if(state == INTERSEC && contadorIntersec == 2){
-        applyPWM(&wheelRight, 0); 
-        applyPWM(&wheelLeft, 0);  
-
-        contadorIntersec = 0;
-        return;   
-    }
-
-    // calcula a posição da linha
-    position = (forwardSensor.searchLine(&state, &contadorIntersec) - 3500)/100;
+    // calcula a posição da linha (pinCout * 1000)/2 = 2500 (index 0 nao soma em search line)
+    position = (forwardSensor.searchLine(&state) - 2500)/100;
 
     // calcula o pid
     pid = control.simplePID(kp, ki, kd, position, 2*speed);
 
-    // velocidade das rodas
+    // velocidade toral das rodas
     int16_t velLeft = speed;
     int16_t velRight = speed;
 
-    // aplica nas rodas
+    // aplica o pid nas rodas
     if(pid > 0) velRight = speed - pid;
     else        velLeft = speed + pid;
 
     // calcula pwm max (correspondente a 6v)
     float tensaoBateria = (analogicoParaTensao(analogRead(divTensao)))* 3.96; // 7.6/1.92; //7.6v viram 1.92v (divisor de tensão)
-    if(tensaoBateria < 7.3) state == OFF; // desliga
+    if(tensaoBateria < 7.7) state == OFF; // desliga
     int pwm_6volts = (6.0*4095)/tensaoBateria;
-    // if(pwm_6volts > 4095) pwm_6volts = 4095;
+    // if(pwm_6volts > 4095) pwm_6volts = 4095; (na fonte de bancada para testar, use isso)
 
-    // pwm correspondente a 6v
-    uint8_t pMorto = 0.2;
+    // pwm correspondente ao ponto que a roda nao gira
+    uint8_t pMorto = 0.2; // 20% do pwm maximo
 
+    // mapeia o pwm resultante para a faixa de pwm q queremos 
     if(velRight >= 0)   velRight = map(velRight, 0, speed, pMorto*pwm_6volts, pwm_6volts);
     else                velRight = map(velRight, -speed, 0, -pwm_6volts, -pMorto*pwm_6volts);
 
@@ -181,11 +170,11 @@ void loop(){
 
 
     // aplica o pwm
-    applyPWM(&wheelRight, velRight); 
+    applyPWM(&wheelRight, velRight);
     applyPWM(&wheelLeft, velLeft);  
     
-    // debug
+    // debug (serialBT.println leva mto tempo acaba afetando o desempenho do loop. coloque na thread do segundo nucleo)
     //SerialBT.printf("p: %.2f\t - PID: %d\t - pwm1: %d\t - pwm2: %d\n", position, pid, velRight, velLeft);
 
-    delay(5);
+    delay(2);
 }

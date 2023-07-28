@@ -271,7 +271,7 @@ uint32_t lineSensor::readNormalized(uint8_t index){
     return value;
 }
 
-double lineSensor::searchLine(stt* state, uint8_t* contadorIntersec){
+double lineSensor::searchLine(stt* state){
     // calcula onde a linha esta
     double sum = 0, measuraments = 0;
     bool inLine = false;
@@ -288,7 +288,6 @@ double lineSensor::searchLine(stt* state, uint8_t* contadorIntersec){
     // define intersecção
     if((measuraments) > ((line * sensorCount)*0.6)){
         *state = INTERSEC;
-        *contadorIntersec += 1;
         digitalWrite(21, !digitalRead(21));   
     }
 
