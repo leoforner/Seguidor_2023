@@ -36,7 +36,7 @@ stt state = OFF;
 #endif
 
 #ifdef FOMINHA
-    uint8_t pins[] = {32, 33, 25, 26, 27, 14}, pinCount = 6;
+    uint8_t pins[] = {35, 32, 33, 25, 26, 27, 14, 12}, pinCount = 8;
 #endif
 
 // sensor frontal
@@ -70,6 +70,7 @@ void setup(){
     // manda pwm zero nos motores (quando a esp reseta estava salvando o ultimo pwm aplicado)
     applyPWM(&wheelLeft, 0);
     applyPWM(&wheelRight, 0);
+
 
     // anexa as interrupcoes ao segundo nucleo
     xTaskCreatePinnedToCore(
@@ -139,7 +140,7 @@ void loop(){
     }
 
     // calcula a posição da linha (pinCout * 1000)/2 = 2500 (index 0 nao soma em search line)
-    position = (forwardSensor.searchLine(&state) - 2500)/100;
+    position = (forwardSensor.searchLine(&state) - 3500)/100;
 
     // calcula o pid
     pid = control.simplePID(kp, ki, kd, position, 2*speed);
@@ -155,7 +156,7 @@ void loop(){
     // calcula pwm max (correspondente a 6v)
     float tensaoBateria = (analogicoParaTensao(analogRead(divTensao)))* 3.96; // 7.6/1.92; //7.6v viram 1.92v (divisor de tensão)
     if(tensaoBateria < 7.7) state == OFF; // desliga
-    int pwm_6volts = (6.0*4095)/tensaoBateria;
+    int pwm_6volts = (8.0*4095)/tensaoBateria;
     // if(pwm_6volts > 4095) pwm_6volts = 4095; (na fonte de bancada para testar, use isso)
 
     // pwm correspondente ao ponto que a roda nao gira
