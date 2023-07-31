@@ -72,8 +72,8 @@ void IRAM_ATTR interrupt(void * param){
         // caso ele receba algum dado ele altera as constantes 
         if(SerialBT.available()) recebeDados(&texto);
 
-        // caso ele detecte marcação
-        if(analogRead(right) > (whiteRight - (0.3*whiteRight)) && state > 2){
+        // caso ele detecte marcação (acabamos usando um pino que nao da de usar interrupt)
+        if(analogRead(right) > (whiteRight - (0.3*whiteRight)) && state > 2){ 
             if(state == PISTA){ 
                 state = FINAL;
                 vTaskDelete(NULL);  

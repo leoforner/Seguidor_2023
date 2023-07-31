@@ -71,7 +71,6 @@ void setup(){
     applyPWM(&wheelLeft, 0);
     applyPWM(&wheelRight, 0);
 
-
     // anexa as interrupcoes ao segundo nucleo
     xTaskCreatePinnedToCore(
         interrupt,
@@ -120,6 +119,7 @@ void setup(){
 
     // debug
     SerialBT.printf("kp: %.3f\nki: %.3f\nkd: %.3f\nspeed: %d\n", kp, ki, kd, speed);
+    SerialBT.println((analogicoParaTensao(analogRead(divTensao)))*3.96); // 7.6/1.92 7.6v viram 1.92v (divisor de tensão));
 
     // sinalização piscando led
     for(uint8_t i = 0; i < 4; i++){
@@ -139,7 +139,7 @@ void loop(){
         return;
     }
 
-    // calcula a posição da linha (pinCout * 1000)/2 = 2500 (index 0 nao soma em search line)
+    // calcula a posição da linha (pinCout * 1000)/2 = 3500 (index 0 nao soma em search line)
     position = (forwardSensor.searchLine(&state) - 3500)/100;
 
     // calcula o pid
@@ -153,8 +153,11 @@ void loop(){
     if(pid > 0) velRight = speed - pid;
     else        velLeft = speed + pid;
 
+    /*acabamos tirando pois estava diminuindo o torque das rodas e 
+    / o robo nao conseguia fazer curvas fechadas apos retas longas*/
+
     // calcula pwm max (correspondente a 6v)
-    float tensaoBateria = (analogicoParaTensao(analogRead(divTensao)))* 3.96; // 7.6/1.92; //7.6v viram 1.92v (divisor de tensão)
+    /*float tensaoBateria = (analogicoParaTensao(analogRead(divTensao)))* 3.96; // 7.6/1.92; //7.6v viram 1.92v (divisor de tensão)
     if(tensaoBateria < 7.7) state == OFF; // desliga
     int pwm_6volts = (8.0*4095)/tensaoBateria;
     // if(pwm_6volts > 4095) pwm_6volts = 4095; (na fonte de bancada para testar, use isso)
@@ -167,15 +170,12 @@ void loop(){
     else                velRight = map(velRight, -speed, 0, -pwm_6volts, -pMorto*pwm_6volts);
 
     if(velLeft >= 0)    velLeft = map(velLeft, 0, speed, pMorto*pwm_6volts, pwm_6volts);
-    else                velLeft = map(velLeft, -speed, 0, -pwm_6volts, pMorto*pwm_6volts*-1);
+    else                velLeft = map(velLeft, -speed, 0, -pwm_6volts, pMorto*pwm_6volts*-1);*/
 
 
     // aplica o pwm
     applyPWM(&wheelRight, velRight);
     applyPWM(&wheelLeft, velLeft);  
-    
-    // debug (serialBT.println leva mto tempo acaba afetando o desempenho do loop. coloque na thread do segundo nucleo)
-    //SerialBT.printf("p: %.2f\t - PID: %d\t - pwm1: %d\t - pwm2: %d\n", position, pid, velRight, velLeft);
 
     delay(2);
 }
