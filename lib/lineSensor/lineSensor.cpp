@@ -3,6 +3,19 @@
 #include <cmath>
 #include <Arduino.h>
 
+#ifndef MEU_ENUM_H
+#define MEU_ENUM_H
+enum stt {
+    OFF = -1,
+    CONNECT = 0,
+    CALIBR1 = 1,
+    CALIBR2 = 2,
+    INTERSEC = 3,
+    PISTA = 4,
+    FINAL = 5
+};
+#endif
+
 lineSensor::lineSensor(uint8_t sensorCount, uint8_t sensorPins[], bool lineWhite){
     // define tamanho dos arrays de acordo com a quantidade de sensores
     this->sensorPins = new uint8_t[sensorCount];
@@ -11,8 +24,10 @@ lineSensor::lineSensor(uint8_t sensorCount, uint8_t sensorPins[], bool lineWhite
     minimum = new uint16_t[sensorCount];
 
     // configura os pinos
-    for(int i = 0; i < sensorCount; i++)
+    for(int i = 0; i < sensorCount; i++){
         this->sensorPins[i] = sensorPins[i];
+        pinMode(sensorPins[i], INPUT_PULLDOWN);
+    }
     this->lineWhite = lineWhite;
     this->sensorCount = sensorCount;
 }
@@ -38,13 +53,13 @@ lineSensor::lineSensor(uint8_t sensorCount, uint8_t pinsCount, uint8_t pinos[], 
     this->lineWhite = lineWhite;
 }
 
-void lineSensor::setLed(uint8_t led){
-    this->led = led;
+void lineSensor::setLed(uint8_t localLed){
+    this->localLed = localLed;
 }
 
 void lineSensor::begin(){
     // configrações padroes
-    pinMode(led, OUTPUT);
+    pinMode(localLed, OUTPUT);
     verb = false;
     line = 1000;
     rug = 0;
@@ -61,7 +76,7 @@ void lineSensor::begin(){
 
 void lineSensor::beginMultiplex(){
     // configrações padroes
-    pinMode(led, OUTPUT);
+    pinMode(localLed, OUTPUT);
     multiplex = true;
     verb = false;
     line = 1000;
@@ -143,10 +158,10 @@ void lineSensor::isValid(){
         if(minimum[i] >= maximum[i]){
                 Serial.println("Erro. Refaça as medidas!");
                 printConfig();
-            while(true){ // prende em um loop com o led piscando para sinalizar
-                digitalWrite(led, HIGH);
+            while(true){ // prende em um loop com o localLed piscando para sinalizar
+                digitalWrite(localLed, HIGH);
                 delay(250);
-                digitalWrite(led, LOW);
+                digitalWrite(localLed, LOW);
                 delay(250);
             }
         }
@@ -155,33 +170,33 @@ void lineSensor::isValid(){
 
 void lineSensor::setMaxAndMinEs(){
     // mede o quanto está lendo na parte escura da pista
-    digitalWrite(led, HIGH);
+    digitalWrite(localLed, HIGH);
     if(verb)
         Serial.println("Medindo a itensidade da luz para o preto...");
-    delay(2000);
-    digitalWrite(led, LOW);
+    delay(1000);
+    digitalWrite(localLed, LOW);
     getValues(maximum);
 
-    // pisca o led
+    // pisca o localLed
     delay(100);
-    digitalWrite(led, HIGH);
+    digitalWrite(localLed, HIGH);
     delay(50);
-    digitalWrite(led, LOW);
+    digitalWrite(localLed, LOW);
     delay(1000);
 
     // mede o quanto está lendo na parte clara da pista
-    digitalWrite(led, HIGH);
+    digitalWrite(localLed, HIGH);
     if(verb)
         Serial.println("Medindo a itensidade da luz para o branco...");
-    delay(2000);
-    digitalWrite(led, LOW);
+    delay(1000);
+    digitalWrite(localLed, LOW);
     getValues(minimum);
 
-    // pisca o led
+    // pisca o localLed
     delay(100);
-    digitalWrite(led, HIGH);
+    digitalWrite(localLed, HIGH);
     delay(50);
-    digitalWrite(led, LOW);
+    digitalWrite(localLed, LOW);
     delay(100);
 
     // verifica se as medidas sao validas
@@ -190,11 +205,11 @@ void lineSensor::setMaxAndMinEs(){
 
 void lineSensor::setMaxAndMinDi(){
     // salva os pontos maximos e minimos de cada sensor
-    uint32_t start = millis();
-    digitalWrite(led, HIGH);
+    uint32_t timeStart = millis();
+    digitalWrite(localLed, HIGH);
     if(verb)
-        Serial.println("Passe o sensor sobre a linha e o tapete enquanto o led está acesso para definir o branco e preto de cada sensor.");
-    while((millis() - start) < 5000){
+        Serial.println("Passe o sensor sobre a linha e o tapete enquanto o localLed está acesso para definir o branco e preto de cada sensor.");
+    while((millis() - timeStart) < 2000){
         for(uint8_t i = 0; i < sensorCount; i++){
             int x = read(i);  
             if(x > maximum[i])
@@ -203,7 +218,7 @@ void lineSensor::setMaxAndMinDi(){
                 minimum[i] = x;
         }
     }
-    digitalWrite(led, LOW);
+    digitalWrite(localLed, LOW);
 
     // verifica se as medidas sao validas
     isValid();
@@ -256,7 +271,7 @@ uint32_t lineSensor::readNormalized(uint8_t index){
     return value;
 }
 
-double lineSensor::searchLine(){
+double lineSensor::searchLine(stt* state){
     // calcula onde a linha esta
     double sum = 0, measuraments = 0;
     bool inLine = false;
@@ -269,6 +284,13 @@ double lineSensor::searchLine(){
         if(x > lineTolerance) 
             inLine = true;     
     }
+
+    // define intersecção
+    if((measuraments) > ((line * sensorCount)*0.6)){
+        *state = INTERSEC;
+        digitalWrite(21, !digitalRead(21));   
+    }
+
     if(inLine){
         lastPosition = sum/(measuraments); // media ponderada
     }else{ 

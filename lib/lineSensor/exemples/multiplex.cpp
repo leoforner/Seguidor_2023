@@ -24,10 +24,3 @@ void setup() {
     ls.calibration(STATIC);
     ls.printConfig();
 }
-
-void loop() {
-    uint32_t start = millis();
-    Serial.printf("Medida = %d \t Tempo: %dms \n", ls.searchLine(), millis() - start);
-    //ls.searchLine();
-    delay(250);
-}
