@@ -4,7 +4,7 @@
 #include "pins.h"
 #include "wheels.h"
 #include <Arduino.h>
-
+#include "mapeamento.h"
 #ifndef MEU_ENUM_H
 #define MEU_ENUM_H
 
@@ -27,7 +27,9 @@ extern int32_t pid;
 extern double kp, ki, kd;
 extern uint32_t speed;
 uint32_t timeFilter = 0, delayPlot = 0;
-
+extern int sinalizacao_atual;
+bool encoderStarted=false;
+extern EncoderCounter encoder;
 static void IRAM_ATTR change_state(){
     if((millis() - timeFilter) > 200){
         // avança o estado
@@ -68,12 +70,22 @@ void recebeDados(String * texto){
 void IRAM_ATTR interrupt(void * param){
     attachInterrupt(digitalPinToInterrupt(start), change_state, HIGH);
     static String texto = "";
-    while(1){        
+    bool MarcouBranco = false;
+    while(1){ 
+
+        //COMEÇAR A CONTAGEM DO ENCODER
+        if(state == INTERSEC && encoderStarted == false)
+        {
+        //encoder.resumeCounting();
+        encoderStarted = true;
+        }
+
         // caso ele receba algum dado ele altera as constantes 
         if(SerialBT.available()) recebeDados(&texto);
 
-        // caso ele detecte marcação (acabamos usando um pino que nao da de usar interrupt)
-        if(analogRead(right) > (whiteRight - (0.3*whiteRight)) && state > 2){ 
+        bool direito_on = false, esquerdo_on = false;
+        // caso ele detecte marcação
+        if(analogRead(right) > (whiteRight - (0.3*whiteRight)) && state > 2){
             if(state == PISTA){ 
                 state = FINAL;
                 vTaskDelete(NULL);  
@@ -81,10 +93,32 @@ void IRAM_ATTR interrupt(void * param){
             else{
                 state = PISTA;
             }
-            digitalWrite(led, !digitalRead(led));         // apaga o led
+            //digitalWrite(led, !digitalRead(led));         // apaga o led
             delay(200);
+            direito_on = true;
         }
 
+        bool MarcandoBranco = false;
+        
+        if(!direito_on)
+        {
+        if(analogRead(left) > (whiteLeft - (0.2*whiteLeft)) && state >= INTERSEC){ //marcando branco
+            MarcandoBranco = true;
+            if(MarcandoBranco != MarcouBranco)
+            {
+                sinalizacao_atual++;
+                digitalWrite(led, !digitalRead(led));
+                MarcouBranco = true;
+            }  
+        }
+        }
+        else
+        {
+            MarcandoBranco = false;
+            MarcouBranco = false;
+        }
+        
+        
         // envia o erro para plotagem
         /*if(millis() - delayPlot > 100 && (state == PISTA || state == INTERSEC)){
             SerialBT.print("{" + String(pid) + "}");

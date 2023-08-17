@@ -35,4 +35,6 @@ class EncoderCounter{
     double filtro(double x);
     void setFiltroCostant(double r);
     void limpaCounter();
+    void pauseCounting();
+    void resumeCounting();
 };

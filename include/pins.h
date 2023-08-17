@@ -38,8 +38,8 @@
     #define divTensao 13
 
     // botoes
-    #define enc1 23
-    #define enc2 22
+    #define enc1 22
+    #define enc2 23
     #define enc3 5
     #define enc4 18
     #define start 19
@@ -72,10 +72,6 @@ void definePins(){
     digitalWrite(led, LOW);
     pinMode(left, INPUT);
     pinMode(right, INPUT);
-    pinMode(enc1, INPUT);
-    pinMode(enc2, INPUT);
-    pinMode(enc3, INPUT);
-    pinMode(enc4, INPUT);
     pinMode(start, INPUT);
     pinMode(divTensao, INPUT);
     pinMode(ain1, OUTPUT);

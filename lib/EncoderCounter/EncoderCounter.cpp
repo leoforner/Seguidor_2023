@@ -27,7 +27,7 @@ EncoderCounter::EncoderCounter(int GPIO_PINO, pcnt_unit_t COUNTER_UNIT, unsigned
   pcnt_counter_pause(COUNTER_UNIT);
   pcnt_counter_clear(COUNTER_UNIT);
   pcnt_counter_resume(COUNTER_UNIT);
-  pcnt_set_filter_value(COUNTER_UNIT, 36); // o segundo argumento é a quantidade de pulsos do APB clock( frequencia do bus do esp), então o tempo é relativo a frequência do bus
+  pcnt_set_filter_value(COUNTER_UNIT, filterTime); // o segundo argumento é a quantidade de pulsos do APB clock( frequencia do bus do esp), então o tempo é relativo a frequência do bus
   pcnt_filter_enable(COUNTER_UNIT); // The APB_CLK clock is running at 80 MHz
 
 this->setFiltroCostant(0.4); //constant padrão caso nenhuma seja definida 
@@ -94,8 +94,18 @@ void EncoderCounter:: setFiltroCostant(double r){
 }
 void EncoderCounter:: limpaCounter()
 {
-  inverte = micros();
+  //inverte = micros();
   pcnt_counter_pause(COUNTER_UNIT);
   pcnt_counter_clear(COUNTER_UNIT);
   pcnt_counter_resume(COUNTER_UNIT);
+}
+void EncoderCounter:: resumeCounting()
+{
+  pcnt_counter_resume(COUNTER_UNIT);
+
+}
+void EncoderCounter:: pauseCounting()
+{
+    pcnt_counter_pause(COUNTER_UNIT);
+
 }

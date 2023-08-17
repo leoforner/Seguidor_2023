@@ -288,7 +288,7 @@ double lineSensor::searchLine(stt* state){
     // define intersecção
     if((measuraments) > ((line * sensorCount)*0.6)){
         *state = INTERSEC;
-        digitalWrite(21, !digitalRead(21));   
+        //digitalWrite(21, !digitalRead(21));   
     }
 
     if(inLine){
