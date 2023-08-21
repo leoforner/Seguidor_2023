@@ -1,49 +1,26 @@
 // bibliotecas
-#include <BluetoothSerial.h>
-#include <lineSensor.h>
 #include <Arduino.h>
-#include <PD.h>
 
 // includes
 #include "adc.h"
 #include "pins.h"
-#include "times.h"
 #include "wheels.h"
-#include "exceptions.h"
+#include "RincPoster.h"
 
-// SerialBT bluetooth
-BluetoothSerial SerialBT;
-double position;
-int32_t pid = 0;
-uint32_t speed = 2800;
+const char *ssid = "MinhaRede";
+const char *psw = "12345679";
+const char *scriptId = "AKfycbyVfyGF-wV-MGB_alEFjItjiu34cxwPXVKAwT62WlXTDncyurrE-w4QFaX-dOSzaBS5mA";
 
-// valores maximos dos sensores laterais
-uint16_t whiteLeft = 0, whiteRight = 0;
+RincPoster poster(ssid, psw);
 
-uint8_t contadorIntersec = 0;
+uint32_t timeStart = 0;
 
-// constantes do PID
-double kp = 400, ki = 10, kd = 45;
+double medidas[4][200];
 
-// inicia o estado do carrinho como off
-stt state = OFF;
+DynamicJsonDocument json(1000);
 
-// sensores frontais (defina o carrinho em pins.h)
-#ifdef FRANK
-    uint8_t pins[] = {13, 12, 14, 27, 26, 25, 33, 32}, pinCount = 8;
-    // {32, 33, 25, 26, 27, 14, 12, 13}
-    // {13, 12, 14, 27, 26, 25, 33, 32}
-#endif
-
-#ifdef FOMINHA
-    uint8_t pins[] = {35, 32, 33, 25, 26, 27, 14, 12}, pinCount = 8;
-#endif
-
-// sensor frontal
-lineSensor forwardSensor(pinCount, pins, true);             
-
-// controle do carrinho (usamos apenas simplePID)
-PD control(1, 1, 1, 1);
+EncoderCounter encoderLeft(enc3, PCNT_UNIT_0, 140, 1000);
+EncoderCounter encoderRight(enc2, PCNT_UNIT_1, 140, 1000);
 
 // rodas
 wheels wheelLeft, wheelRight;
@@ -51,10 +28,19 @@ wheels wheelLeft, wheelRight;
 // canais pwm (precisa definir aqui para definir em pins.h)
 uint8_t channelLeft = 0, channelRight = 1;
 
+uint8_t counter = 0;
+void updateMsg()
+{
+  json["sheet_name"] = "teste1";
+  json["time"] = medidas[2][counter];
+  json["vel_left"] = medidas[0][counter];
+  json["vel_right"] = medidas[1][counter];
+  json["bateria"] = medidas[3][counter];
+}
+
 void setup(){
     Serial.begin(115200);
     definePins();
-    SerialBT.begin("FOMINHA");
 
     // define as propriedades das rodas
     wheelLeft.mov = STOPPED;    // inicia como parada
@@ -71,111 +57,53 @@ void setup(){
     applyPWM(&wheelLeft, 0);
     applyPWM(&wheelRight, 0);
 
-    // anexa as interrupcoes ao segundo nucleo
-    xTaskCreatePinnedToCore(
-        interrupt,
-        "interrupt",
-        2048,
-        NULL,
-        2,
-        NULL,
-        0
-    );
+    delay(3000);
 
-    // espera algum dispositivo conectar
-    while(state < CONNECT) {
-        for(uint8_t i = 0; i < 4; i++){
-            digitalWrite(led, HIGH);
-            delay(100);
-            digitalWrite(led, LOW);
-            delay(100);
-        }
-        delay(1000);
-    }
-
-    SerialBT.println("Carrinho ligado, pressione o botao para iniciar calibração do sensor frontal");
-    while(state < 1) delay(10);
-
-    // calibra o sensor frontal
-    SerialBT.println("Calibrando...");
-    forwardSensor.begin();
-    forwardSensor.setLed(led);
-    forwardSensor.calibration(STATIC);
-
-    SerialBT.println("Pressione o botao para iniciar calibração dos sensores laterais");
-    while(state < 2) delay(10);
-
-    // calibra os sensores laterias
-    uint32_t time = millis(); 
-    while((millis() - time) < 1500){
-        if(analogRead(left) > whiteLeft)   whiteLeft = analogRead(left);
-        if(analogRead(right) > whiteRight) whiteRight = analogRead(right);  
-    }
-    
-    digitalWrite(led, LOW);
-
-    SerialBT.println("Sensores calibrados, pressione o botao para iniciar trajeto");
-    while(state < 3) delay(10);
-
-    // debug
-    SerialBT.printf("kp: %.3f\nki: %.3f\nkd: %.3f\nspeed: %d\n", kp, ki, kd, speed);
-    SerialBT.println((analogicoParaTensao(analogRead(divTensao)))*3.96); // 7.6/1.92 7.6v viram 1.92v (divisor de tensão));
-
-    // sinalização piscando led
-    for(uint8_t i = 0; i < 4; i++){
-        digitalWrite(led, HIGH);
-        delay(100);
-        digitalWrite(led, LOW);
-        delay(500);
-    }
+    encoderLeft.limpaCounter();
+    encoderRight.limpaCounter();
+    timeStart = millis();
 }
 
 void loop(){
-    // final da pista
-    if(state == FINAL || state == OFF){
-        // freia as rodas para parar inercia do carrinho
-        brake(&wheelLeft);
+    while(counter < 80){
+    // calcula pwm max (correspondente a 6v)
+        float tensaoBateria = (analogicoParaTensao(analogRead(divTensao)))* 3.96; // 7.6/1.92; //7.6v viram 1.92v (divisor de tensão)
+        int pwm_tensao = (7.05*4095)/tensaoBateria;
+
+        // aplica o pwm
+        //applyPWM(&wheelRight, pwm_tensao);
+        applyPWM(&wheelLeft, pwm_tensao);  
+
+        // freia a outra roda
         brake(&wheelRight);
-        return;
+
+        medidas[0][counter] = encoderLeft.getPulses();//encoderLeft.getRPS();
+        encoderLeft.limpaCounter();
+        medidas[1][counter] = encoderRight.getPulses();// encoderRight.getRPS();
+        encoderRight.limpaCounter();
+
+        medidas[2][counter] = millis() - timeStart;
+        medidas[3][counter] = tensaoBateria;
+
+        counter++;
+        delay(50);
     }
 
-    // calcula a posição da linha (pinCout * 1000)/2 = 3500 (index 0 nao soma em search line)
-    position = (forwardSensor.searchLine(&state) - 3500)/100;
+    brake(&wheelLeft);
+    brake(&wheelRight);
 
-    // calcula o pid
-    pid = control.simplePID(kp, ki, kd, position, 2*speed);
+    counter = 0;
 
-    // velocidade toral das rodas
-    int16_t velLeft = speed;
-    int16_t velRight = speed;
+    if (!poster.begin(GOOGLE_SCRIPT, scriptId)){
+    //Serial.printf("Error in poster initialization\n");
+    return;
+    }
 
-    // aplica o pid nas rodas
-    if(pid > 0) velRight = speed - pid;
-    else        velLeft = speed + pid;
+    for(uint8_t i = 0; i< 80; i++){
+        updateMsg();
+        if (!poster.post(json)) Serial.printf("Message %d not delivered\n", counter);
+        counter++;
+    }
 
-    /*acabamos tirando pois estava diminuindo o torque das rodas e 
-    / o robo nao conseguia fazer curvas fechadas apos retas longas*/
-
-    // calcula pwm max (correspondente a 6v)
-    /*float tensaoBateria = (analogicoParaTensao(analogRead(divTensao)))* 3.96; // 7.6/1.92; //7.6v viram 1.92v (divisor de tensão)
-    if(tensaoBateria < 7.7) state == OFF; // desliga
-    int pwm_6volts = (8.0*4095)/tensaoBateria;
-    // if(pwm_6volts > 4095) pwm_6volts = 4095; (na fonte de bancada para testar, use isso)
-
-    // pwm correspondente ao ponto que a roda nao gira
-    uint8_t pMorto = 0.2; // 20% do pwm maximo
-
-    // mapeia o pwm resultante para a faixa de pwm q queremos 
-    if(velRight >= 0)   velRight = map(velRight, 0, speed, pMorto*pwm_6volts, pwm_6volts);
-    else                velRight = map(velRight, -speed, 0, -pwm_6volts, -pMorto*pwm_6volts);
-
-    if(velLeft >= 0)    velLeft = map(velLeft, 0, speed, pMorto*pwm_6volts, pwm_6volts);
-    else                velLeft = map(velLeft, -speed, 0, -pwm_6volts, pMorto*pwm_6volts*-1);*/
-
-
-    // aplica o pwm
-    applyPWM(&wheelRight, velRight);
-    applyPWM(&wheelLeft, velLeft);  
-
-    delay(2);
+    delay(10000);
 }

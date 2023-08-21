@@ -33,8 +33,6 @@
 
 #ifdef FOMINHA
     // analogicos
-    #define left 39
-    #define right 36
     #define divTensao 13
 
     // botoes
@@ -42,7 +40,6 @@
     #define enc2 22
     #define enc3 5
     #define enc4 18
-    #define start 19
 
     // motor 1
     #define pwma 15
@@ -70,13 +67,10 @@
 void definePins(){
     pinMode(led, OUTPUT);
     digitalWrite(led, LOW);
-    pinMode(left, INPUT);
-    pinMode(right, INPUT);
     pinMode(enc1, INPUT);
     pinMode(enc2, INPUT);
     pinMode(enc3, INPUT);
     pinMode(enc4, INPUT);
-    pinMode(start, INPUT);
     pinMode(divTensao, INPUT);
     pinMode(ain1, OUTPUT);
     pinMode(ain2, OUTPUT);
