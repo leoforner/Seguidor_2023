@@ -65,14 +65,6 @@ void setup(){
     definePins();
     SerialBT.begin("FOMINHA");
 
-    //
-
-    for(int i=0; i++; i<31)
-    {
-        NumerodeTicks[i] = 0;
-    }
-    //
-
     // define as propriedades das rodas
     wheelLeft.mov = STOPPED;    // inicia como parada
     wheelLeft.l1 = bin1;
@@ -152,19 +144,18 @@ void setup(){
 }
   
   // void printarcoleta()
-   // {
-     ///   for(int i = 0; i <= 30; i++)
-   //     {
-     //       SerialBT.println(NumerodeTicks[i]);
-   //     }
-  //  } 
+    //{
+      //  for(int i = 0; i <= 30; i++)
+       // {
+         //   SerialBT.print("Trajeto: "); SerialBT.print(i); SerialBT.print("| "); SerialBT.print("Ticks: "); SerialBT.println(NumerodeTicks[i]);
+       // }
+    //} 
   
 void loop(){
     /*--------MAPEAMENTO--------*/
-    coletaEncoder();
+    //coletaEncoder();
     /*--------------------------*/
     //SerialBT.println(encoder.getPulses());
-    //encoder.limpaCounter();
     // final da pista
     if(state == FINAL || state == OFF){
         // \freia as rodas para parar inercia do carrinho
@@ -172,8 +163,8 @@ void loop(){
         brake(&wheelRight);
         if(!dados_printados)
         {
-        printarcoleta();
-        dados_printados = true;    
+            //printarcoleta();
+            dados_printados = true;    
         }
         
         return;

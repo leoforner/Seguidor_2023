@@ -76,7 +76,7 @@ void acao() //acelerar ou porc_porc_porc_porc_frear com base no mapeamento
     {
         if(curva_a_frente == VERDE)
         {
-         porc_accel = 0.5;
+        porc_accel = 0.5;
         VelAceleracao = 1;
         VelFrenagem = 1;
         }
@@ -160,11 +160,11 @@ void acao() //acelerar ou porc_porc_porc_porc_frear com base no mapeamento
         VelFrenagem = 0.97;
         }
 
-              else if(curva_a_frente == AMARELO)
+        else if(curva_a_frente == AMARELO)
         {
         porc_accel = 0.5;
         VelAceleracao = 1.04;
-        VelFrenagem = 1.04;
+        VelFrenagem = 0.96;
         }
         
         else if(curva_a_frente == ROXO)
@@ -208,11 +208,11 @@ void acao() //acelerar ou porc_porc_porc_porc_frear com base no mapeamento
 
 void definir_parametros_trajeto()
 {
-    trajetos[0].num_ticks = 0; 
+    trajetos[0].num_ticks = 100; 
     trajetos[0].tamanho = MINIMO; 
     trajetos[0].curva_a_frente = VERDE;  
 
-    trajetos[1].num_ticks = 1;
+    trajetos[1].num_ticks = 300;
     trajetos[1].tamanho = MEDIO;
     trajetos[1].curva_a_frente = VERMELHO;  
 

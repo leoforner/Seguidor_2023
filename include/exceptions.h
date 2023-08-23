@@ -30,6 +30,20 @@ uint32_t timeFilter = 0, delayPlot = 0;
 extern int sinalizacao_atual;
 bool encoderStarted=false;
 extern EncoderCounter encoder;
+int sensor_esquerdo_passado = 0;
+hw_timer_t *timer_sensor_esquerdo = NULL;
+bool isLeftSensorOn = false;
+int sinalizacao_atual_passada = 0;
+void IRAM_ATTR interrupt_timer_sensor_esquerdo()
+{
+    bool sensor_esquerdo = analogRead(left) > (whiteLeft - (0.3*whiteLeft));
+    if(sensor_esquerdo != sensor_esquerdo_passado)
+    {
+        sinalizacao_atual++;
+        SerialBT.print("sinalizacao atual: "); SerialBT.print(sinalizacao_atual); SerialBT.print("\n");
+    }
+        sensor_esquerdo_passado = sensor_esquerdo; 
+}
 static void IRAM_ATTR change_state(){
     if((millis() - timeFilter) > 200){
         // avança o estado
@@ -43,6 +57,7 @@ static void IRAM_ATTR change_state(){
             //Serial.println("Esp reset");
             ESP.restart();  
         }
+        
         timeFilter = millis();
     }
 }
@@ -67,12 +82,16 @@ void recebeDados(String * texto){
     }
 }
 
+
+
 void IRAM_ATTR interrupt(void * param){
     attachInterrupt(digitalPinToInterrupt(start), change_state, HIGH);
     static String texto = "";
-    bool MarcouBranco = false;
-    while(1){ 
+  
+    
 
+    while(1){ 
+        
         //COMEÇAR A CONTAGEM DO ENCODER
         if(state == INTERSEC && encoderStarted == false)
         {
@@ -82,8 +101,6 @@ void IRAM_ATTR interrupt(void * param){
 
         // caso ele receba algum dado ele altera as constantes 
         if(SerialBT.available()) recebeDados(&texto);
-
-        bool direito_on = false, esquerdo_on = false;
         // caso ele detecte marcação
         if(analogRead(right) > (whiteRight - (0.3*whiteRight)) && state > 2){
             if(state == PISTA){ 
@@ -95,35 +112,23 @@ void IRAM_ATTR interrupt(void * param){
             }
             //digitalWrite(led, !digitalRead(led));         // apaga o led
             delay(200);
-            direito_on = true;
         }
 
-        bool MarcandoBranco = false;
-        
-        if(!direito_on)
+        if(state > CALIBR2 && !isLeftSensorOn) //habilita o timer se monitoramento do sensor lateral esquerdo
         {
-        if(analogRead(left) > (whiteLeft - (0.2*whiteLeft)) && state >= INTERSEC){ //marcando branco
-            MarcandoBranco = true;
-            if(MarcandoBranco != MarcouBranco)
-            {
-                sinalizacao_atual++;
-                digitalWrite(led, !digitalRead(led));
-                MarcouBranco = true;
-            }  
+            isLeftSensorOn = true;
+            SerialBT.print("Timer ligado \n");
+             //ATIVAR O INTERRUPT DE TIMER
+            timerAlarmEnable(timer_sensor_esquerdo);
+            //
         }
-        }
-        else
+        if(sinalizacao_atual_passada != sinalizacao_atual)
         {
-            MarcandoBranco = false;
-            MarcouBranco = false;
+            SerialBT.print("sinalizacao atual: "); SerialBT.print(sinalizacao_atual); SerialBT.print("\n");
+            SerialBT.printf("Sensor esquerdo: %d", analogRead(left));
         }
-        
-        
-        // envia o erro para plotagem
-        /*if(millis() - delayPlot > 100 && (state == PISTA || state == INTERSEC)){
-            SerialBT.print("{" + String(pid) + "}");
-            delayPlot = millis();
-        }*/
+        sinalizacao_atual_passada = sinalizacao_atual;
+       
 
         delay(1);
     }
