@@ -1,109 +1,152 @@
-// bibliotecas
 #include <Arduino.h>
+#include <ArduinoJson.h>
 
-// includes
-#include "adc.h"
-#include "pins.h"
-#include "wheels.h"
-#include "RincPoster.h"
+#define nPoints 10
 
-const char *ssid = "MinhaRede";
-const char *psw = "12345679";
-const char *scriptId = "AKfycbyVfyGF-wV-MGB_alEFjItjiu34cxwPXVKAwT62WlXTDncyurrE-w4QFaX-dOSzaBS5mA";
+#define x 0
+#define y 1
 
-RincPoster poster(ssid, psw);
+uint8_t cicliIndex = 0; 
 
-uint32_t timeStart = 0;
+// pontos passados
+    float points[nPoints][2] = 
+                     {{1, 1},
+                      {2, 3},
+                      {3, 6},
+                      {4, 9},
+                      {5, 18},
+                      {6, 27},
+                      {7, 40},
+                      {8, 60},
+                      {9, 90},
+                      {10, 120}};
 
-double medidas[4][200];
+const int pinVM = 15;    // Pino para o potenciômetro 'vm'
+const int pinOmega = 2;  // Pino para o potenciômetro 'omega'
+const int pinNoise = 4;  // Pino para o potenciômetro 'noise'
 
-DynamicJsonDocument json(1000);
-
-EncoderCounter encoderLeft(enc3, PCNT_UNIT_0, 140, 1000);
-EncoderCounter encoderRight(enc2, PCNT_UNIT_1, 140, 1000);
-
-// rodas
-wheels wheelLeft, wheelRight;
-
-// canais pwm (precisa definir aqui para definir em pins.h)
-uint8_t channelLeft = 0, channelRight = 1;
-
-uint8_t counter = 0;
-void updateMsg()
-{
-  json["sheet_name"] = "teste1";
-  json["time"] = medidas[2][counter];
-  json["vel_left"] = medidas[0][counter];
-  json["vel_right"] = medidas[1][counter];
-  json["bateria"] = medidas[3][counter];
+// Função para mapear um valor de uma faixa para outra
+float mapFloat(float value, float in_min, float in_max, float out_min, float out_max) {
+    return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
+// so confio q funciona
+float generateGaussianNoise(float mean, float stddev) {
+  static float spare;
+  float u, v, s;
+
+  do {
+    u = random(0, 255) / 255.0 * 2.0 - 1.0;
+    v = random(0, 255) / 255.0 * 2.0 - 1.0;
+    s = u * u + v * v;
+  } while (s >= 1.0 || s == 0.0);
+
+  s = sqrt(-2.0 * log(s) / s);
+  spare = v * s;
+  return mean + stddev * u * s;
+}
+
+float* carDisplacement(float vm, float omega, float dT){
+    // valores default para evitar divisao por zero
+    float dx = vm * dT;
+    float dy = 0;
+
+    if(omega > 0.0){
+        // integral (de 0 a T) vm * cos(omega * dT) dt
+        dx = vm * sin(omega * dT)/omega;
+        // integral (de 0 a T) vm * sin(omega * dT) dt
+        dy = vm * (1 - cos(omega * dT))/omega;
+    }
+
+    //debug
+    //printf("dx: %f\tdy: %f\traio: %f\n", dx, dy, vm/omega);
+
+    // retorna o deslocamento em x e y
+    float * displacement = new float[2];
+    displacement[x] = dx;
+    displacement[y] = dy;
+    return displacement;
+}
+
+void addPoint(float points[][2], float displacement[2], float phi){
+    // remove o ultimo elemento e adiciona 0 como o primeiro
+    points[cicliIndex][x] = 0;
+    points[cicliIndex][y] = 0;
+
+    // calculo sen e cos uma vez para economizar clock
+    float cosPhi = cos(phi);
+    float sinPhi = sin(phi);
+
+    // translada e rotaciona os pontos
+    for(uint8_t i = 0; i < nPoints; i++){
+        float tempDX = (points[i][x] - displacement[x]) * cosPhi - (points[i][y] - displacement[y]) * sinPhi;
+        points[i][y] = (points[i][x] - displacement[x]) * sinPhi + (points[i][y] - displacement[y]) * cosPhi;
+        points[i][x] = tempDX;
+    }
+
+    // muda o array
+    cicliIndex = cicliIndex == nPoints-1 ? 0 : cicliIndex+1;
+}
+
+uint32_t start = 0;
 void setup(){
     Serial.begin(115200);
-    definePins();
 
-    // define as propriedades das rodas
-    wheelLeft.mov = STOPPED;    // inicia como parada
-    wheelLeft.l1 = bin1;
-    wheelLeft.l2 = bin2;
-    wheelLeft.channelPWM = channelLeft;
+    // Configuração dos pinos dos potenciômetros como entradas analógicas
+    pinMode(pinVM, INPUT);
+    pinMode(pinOmega, INPUT);
+    pinMode(pinNoise, INPUT);
 
-    wheelRight.mov = STOPPED;   // inicia como parada
-    wheelRight.l1 = ain1;
-    wheelRight.l2 = ain2;
-    wheelRight.channelPWM = channelRight;
-
-    // manda pwm zero nos motores (quando a esp reseta estava salvando o ultimo pwm aplicado)
-    applyPWM(&wheelLeft, 0);
-    applyPWM(&wheelRight, 0);
-
-    delay(3000);
-
-    encoderLeft.limpaCounter();
-    encoderRight.limpaCounter();
-    timeStart = millis();
+    // random seed
+    randomSeed(analogRead(0));
 }
 
-void loop(){
-    while(counter < 80){
-    // calcula pwm max (correspondente a 6v)
-        float tensaoBateria = (analogicoParaTensao(analogRead(divTensao)))* 3.96; // 7.6/1.92; //7.6v viram 1.92v (divisor de tensão)
-        int pwm_tensao = (7.05*4095)/tensaoBateria;
+void loop(){    
+    // tempo a cada interação do carrinho
+    uint32_t dTime = 3;
 
-        // aplica o pwm
-        //applyPWM(&wheelRight, pwm_tensao);
-        applyPWM(&wheelLeft, pwm_tensao);  
+    // leitura dos valores dos potenciômetros
+    uint16_t vmValue = analogRead(pinVM);
+    uint16_t omegaValue = analogRead(pinOmega);
+    uint16_t noiseValue = analogRead(pinNoise);
 
-        // freia a outra roda
-        brake(&wheelRight);
+    // mapeamento dos valores lidos para a faixa de escolha
+    float vm = mapFloat(vmValue, 0, 4095, 0, 10);
+    float omega = mapFloat(omegaValue, 0, 4095, 0.0, -1.5708);
+    float noise = mapFloat(noiseValue, 0, 4095, 0, 1);
 
-        medidas[0][counter] = encoderLeft.getPulses();//encoderLeft.getRPS();
-        encoderLeft.limpaCounter();
-        medidas[1][counter] = encoderRight.getPulses();// encoderRight.getRPS();
-        encoderRight.limpaCounter();
+    // calcula deslocamento do carrinho
+    float * displacement = carDisplacement(vm, omega, dTime);
 
-        medidas[2][counter] = millis() - timeStart;
-        medidas[3][counter] = tensaoBateria;
+    // calcula um ruido gausiano
+    float noiseX = generateGaussianNoise(0.0, noise);
+    float noiseY = generateGaussianNoise(0.0, noise);
 
-        counter++;
-        delay(50);
+    // aplica o ruido
+    displacement[x] += noiseX;
+    displacement[y] += noiseY;
+
+    // desloca os pontos
+    addPoint(points, displacement, omega*dTime);
+
+    // Criação do JSON
+    StaticJsonDocument<2048> doc; // Tamanho do buffer para o JSON
+    JsonArray x_array = doc.createNestedArray("x");
+    JsonArray y_array = doc.createNestedArray("y");
+
+    // passa o array para o json
+    for(uint8_t i = 0; i < 10; i++){
+        x_array.add(points[i][x]);
+        y_array.add(points[i][y]);
     }
 
-    brake(&wheelLeft);
-    brake(&wheelRight);
+    // printa o json para o python ler
+    serializeJson(doc, Serial);
+    Serial.println();
 
-    counter = 0;
+    // deleta o ponteiro
+    delete [] displacement;
 
-    if (!poster.begin(GOOGLE_SCRIPT, scriptId)){
-    //Serial.printf("Error in poster initialization\n");
-    return;
-    }
-
-    for(uint8_t i = 0; i< 80; i++){
-        updateMsg();
-        if (!poster.post(json)) Serial.printf("Message %d not delivered\n", counter);
-        counter++;
-    }
-
-    delay(10000);
+    // nao recomendo baixar esse delay pois o python é lento replotando
+    delay(150);
 }
