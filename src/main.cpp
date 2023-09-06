@@ -1,8 +1,6 @@
 // bibliotecas
 #include <BluetoothSerial.h>
-#include <EncoderCounter.h>
 #include <lineSensor.h>
-#include <mathModel.h>
 #include <Arduino.h>
 #include <PD.h>
 
@@ -13,15 +11,22 @@
 #include "wheels.h"
 #include "exceptions.h"
 
-// serial bluetooth
+// SerialBT bluetooth
 BluetoothSerial SerialBT;
 double position;
+int32_t pid = 0;
+uint32_t speed = 2800;
 
-uint8_t state = 0;        // estados do carrinho 
-// 0 desligado
-// 1 calibrando
-// 2 e 3 pista
-// 4 final da pista
+// valores maximos dos sensores laterais
+uint16_t whiteLeft = 0, whiteRight = 0;
+
+uint8_t contadorIntersec = 0;
+
+// constantes do PID
+double kp = 400, ki = 10, kd = 45;
+
+// inicia o estado do carrinho como off
+stt state = OFF;
 
 // sensores frontais (defina o carrinho em pins.h)
 #ifdef FRANK
@@ -34,28 +39,16 @@ uint8_t state = 0;        // estados do carrinho
     uint8_t pins[] = {35, 32, 33, 25, 26, 27, 14, 12}, pinCount = 8;
 #endif
 
-lineSensor forwardSensor(pinCount, pins, true);
+// sensor frontal
+lineSensor forwardSensor(pinCount, pins, true);             
 
-// modelo matematico do carrinho
-                             // X    Y
-double carVector[3][2] =   {{+7.5, -2.0},    // roda direita
-                            {-7.5, -2.0},    // roda esquerda
-                            {+0.0, 11.0}};   // linha de sensores
-double wheelsRadius = 1.5, actingTime = 0.8;
-double* wheelsSetPoint = new double[2];
-mathModel carModel(carVector, wheelsRadius, actingTime, wheelsSetPoint);                 
-
-// controle do carrinho
+// controle do carrinho (usamos apenas simplePID)
 PD control(1, 1, 1, 1);
 
-// contadores do encoder
-EncoderCounter encoderLeft(enc3, PCNT_UNIT_0, 140, 1000);
-EncoderCounter encoderRight(enc1, PCNT_UNIT_1, 140, 1000);
-
 // rodas
-wheels wheelLeft, wheelRiht;
+wheels wheelLeft, wheelRight;
 
-// canais pwm (precisa definir para definir em pins.h)
+// canais pwm (precisa definir aqui para definir em pins.h)
 uint8_t channelLeft = 0, channelRight = 1;
 
 void setup(){
@@ -64,27 +57,19 @@ void setup(){
     SerialBT.begin("FOMINHA");
 
     // define as propriedades das rodas
-    wheelLeft.enc = &encoderLeft;
-    wheelLeft.mov = STOPPED;
-    wheelLeft.velocity = 0.0;
+    wheelLeft.mov = STOPPED;    // inicia como parada
     wheelLeft.l1 = bin1;
     wheelLeft.l2 = bin2;
     wheelLeft.channelPWM = channelLeft;
 
-    wheelRiht.enc = &encoderRight;
-    wheelRiht.mov = STOPPED;
-    wheelRiht.velocity = 0.0;
-    wheelRiht.l1 = ain1;
-    wheelRiht.l2 = ain2;
-    wheelRiht.channelPWM = channelRight;
+    wheelRight.mov = STOPPED;   // inicia como parada
+    wheelRight.l1 = ain1;
+    wheelRight.l2 = ain2;
+    wheelRight.channelPWM = channelRight;
 
-    // aplica o pwm nos motores
+    // manda pwm zero nos motores (quando a esp reseta estava salvando o ultimo pwm aplicado)
     applyPWM(&wheelLeft, 0);
-    applyPWM(&wheelRiht, 0);
-
-    // filtro passa baixa 
-    encoderLeft.setFiltroCostant(0.01);
-    encoderRight.setFiltroCostant(0.01);
+    applyPWM(&wheelRight, 0);
 
     // anexa as interrupcoes ao segundo nucleo
     xTaskCreatePinnedToCore(
@@ -97,68 +82,100 @@ void setup(){
         0
     );
 
-    Serial.println("Carrinho ligado, pressione o botao para iniciar calibração");
+    // espera algum dispositivo conectar
+    while(state < CONNECT) {
+        for(uint8_t i = 0; i < 4; i++){
+            digitalWrite(led, HIGH);
+            delay(100);
+            digitalWrite(led, LOW);
+            delay(100);
+        }
+        delay(1000);
+    }
+
+    SerialBT.println("Carrinho ligado, pressione o botao para iniciar calibração do sensor frontal");
     while(state < 1) delay(10);
 
-    Serial.println("Calibrando...");
+    // calibra o sensor frontal
+    SerialBT.println("Calibrando...");
     forwardSensor.begin();
     forwardSensor.setLed(led);
+    forwardSensor.calibration(STATIC);
 
-    // a linha tem 5.7 centimetros com 8 sensores
-    // altera o peso padrao para calcular a distancia da linha
-    // dessa forma a saida esta em nanometro
-    // divindo por 100 a medida passa para centimetros
-    float pesos[8];
-    for(int i = 0; i < 8; i++) pesos[i] = i * 5.7/7; 
-    forwardSensor.setweights(pesos);
-    forwardSensor.setTrackCharacteristics(100, 0, 30);
-    
-    forwardSensor.calibration(DYNAMIC);
-    forwardSensor.printConfig();
-
-    Serial.println("Sensor calibrado, pressione o botao para iniciar trajeto");
+    SerialBT.println("Pressione o botao para iniciar calibração dos sensores laterais");
     while(state < 2) delay(10);
 
-    // sinalização piscando led
-    delay(100);
-    for(uint8_t i = 0; i < 4; i++){
-    digitalWrite(led, HIGH);
-    delay(100);
+    // calibra os sensores laterias
+    uint32_t time = millis(); 
+    while((millis() - time) < 1500){
+        if(analogRead(left) > whiteLeft)   whiteLeft = analogRead(left);
+        if(analogRead(right) > whiteRight) whiteRight = analogRead(right);  
+    }
+    
     digitalWrite(led, LOW);
-    delay(500);
+
+    SerialBT.println("Sensores calibrados, pressione o botao para iniciar trajeto");
+    while(state < 3) delay(10);
+
+    // debug
+    SerialBT.printf("kp: %.3f\nki: %.3f\nkd: %.3f\nspeed: %d\n", kp, ki, kd, speed);
+    SerialBT.println((analogicoParaTensao(analogRead(divTensao)))*3.96); // 7.6/1.92 7.6v viram 1.92v (divisor de tensão));
+
+    // sinalização piscando led
+    for(uint8_t i = 0; i < 4; i++){
+        digitalWrite(led, HIGH);
+        delay(100);
+        digitalWrite(led, LOW);
+        delay(500);
     }
 }
 
 void loop(){
-    // calcula a posição da linha
-    position = (forwardSensor.searchLine(&state)/100.0) - (5.70/2.0);
+    // final da pista
+    if(state == FINAL || state == OFF){
+        // freia as rodas para parar inercia do carrinho
+        brake(&wheelLeft);
+        brake(&wheelRight);
+        return;
+    }
 
-    // calcula o setPoint de cada roda em cm/s
-    carModel.calculateSetPoints(position);
+    // calcula a posição da linha (pinCout * 1000)/2 = 3500 (index 0 nao soma em search line)
+    position = (forwardSensor.searchLine(&state) - 3500)/100;
 
-    // velocidade dos motores
-    getVelocity(&wheelLeft);
-    getVelocity(&wheelRiht);
+    // calcula o pid
+    pid = control.simplePID(kp, ki, kd, position, 2*speed);
 
-    // pi para as rodas
-    int32_t pwmLeft = control.leftPI(50, 10, wheelsSetPoint[0] - wheelLeft.velocity, 4095);
-    int32_t pwmRight = control.rightPI(50, 10, wheelsSetPoint[1] - wheelRiht.velocity, 4095);
+    // velocidade toral das rodas
+    int16_t velLeft = speed;
+    int16_t velRight = speed;
+
+    // aplica o pid nas rodas
+    if(pid > 0) velRight = speed - pid;
+    else        velLeft = speed + pid;
+
+    /*acabamos tirando pois estava diminuindo o torque das rodas e 
+    / o robo nao conseguia fazer curvas fechadas apos retas longas*/
 
     // calcula pwm max (correspondente a 6v)
-    float tensaoBateria = (analogicoParaTensao(analogRead(divTensao)))*7.6/1.92; //7.6v viram 1.92v (divisor de tensão)
-    int pwm_6volts = (6.0*4095)/tensaoBateria;
-    if(pwm_6volts > 4095) pwm_6volts = 4095;
+    /*float tensaoBateria = (analogicoParaTensao(analogRead(divTensao)))* 3.96; // 7.6/1.92; //7.6v viram 1.92v (divisor de tensão)
+    if(tensaoBateria < 7.7) state == OFF; // desliga
+    int pwm_6volts = (8.0*4095)/tensaoBateria;
+    // if(pwm_6volts > 4095) pwm_6volts = 4095; (na fonte de bancada para testar, use isso)
 
-    // monitor serial
-    //Serial.printf("position: %.3f\twheelsSetPoints: %.3f - %.3f\tvel rigth: %.3f\t vel left: %.3f\tpwms: %d - %d\n", 
-    //                    position, wheelsSetPoint[1], wheelsSetPoint[0], wheelRiht.velocity, wheelLeft.velocity, pwmRight, pwmLeft);
+    // pwm correspondente ao ponto que a roda nao gira
+    uint8_t pMorto = 0.2; // 20% do pwm maximo
 
-    // aplica o pwm nos motores
-    applyPWM(&wheelLeft, pwmLeft);
-    applyPWM(&wheelRiht, pwmRight);
+    // mapeia o pwm resultante para a faixa de pwm q queremos 
+    if(velRight >= 0)   velRight = map(velRight, 0, speed, pMorto*pwm_6volts, pwm_6volts);
+    else                velRight = map(velRight, -speed, 0, -pwm_6volts, -pMorto*pwm_6volts);
 
-    // plotagem
-    Serial.printf("%.2f, %.2f, %.2f, %.2f\n", position, wheelsSetPoint[1], wheelLeft.velocity,  wheelRiht.velocity);
+    if(velLeft >= 0)    velLeft = map(velLeft, 0, speed, pMorto*pwm_6volts, pwm_6volts);
+    else                velLeft = map(velLeft, -speed, 0, -pwm_6volts, pMorto*pwm_6volts*-1);*/
 
-    delay(1);
+
+    // aplica o pwm
+    applyPWM(&wheelRight, velRight);
+    applyPWM(&wheelLeft, velLeft);  
+
+    delay(2);
 }

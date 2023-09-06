@@ -4,6 +4,19 @@
 #pragma once // substitui o indef endif
 #include <cstdint>
 
+#ifndef MEU_ENUM_H
+#define MEU_ENUM_H
+enum stt {
+    OFF = -1,
+    CONNECT = 0,
+    CALIBR1 = 1,
+    CALIBR2 = 2,
+    INTERSEC = 3,
+    PISTA = 4,
+    FINAL = 5
+};
+#endif
+
 typedef enum{
     STATIC,
     DYNAMIC
@@ -15,9 +28,9 @@ class lineSensor {
         lineSensor(uint8_t sensorCount, uint8_t sensorPins[], bool lineWhite);
         lineSensor(uint8_t sensorCount, uint8_t pinsCount, uint8_t pinos[], uint8_t multiplexOut, bool lineWhite);
         ~lineSensor();
-        void setLed(uint8_t led);
+        void setLed(uint8_t localLed);
         // calcula onde a linha está 
-        double searchLine(uint8_t* state);
+        double searchLine(stt* state);
         /**
          * @brief
             Define os pontos maximos e minimos de cada sensor
@@ -65,8 +78,8 @@ class lineSensor {
         uint16_t* maximum,* minimum;
         // peso de cada sensor
         float* weights;
-        // quantidade e pinos sensores e o pino do led
-        uint8_t* sensorPins, led = 2;
+        // quantidade e pinos sensores e o pino do localLed
+        uint8_t* sensorPins, localLed = 2;
         // valor do branco, do preto e o quanto ainda é considerado branco 
         uint16_t line, rug, lineTolerance;
         // pinos do multiplexador

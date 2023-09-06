@@ -19,17 +19,8 @@ lineSensor ls(pinCount, pinMult, pinsOut, pinIn, true);
 
 void setup() {
     Serial.begin(115200);
-    ls.setLed(2);
     ls.beginMultiplex();
     //ls.setVerb(true);
     ls.calibration(STATIC);
     ls.printConfig();
-}
-
-uint8_t state = 0; // define intersecção
-void loop() {
-    uint32_t start = millis();
-    Serial.printf("Medida = %d \t Tempo: %dms \n", ls.searchLine(&state), millis() - start);
-    //ls.searchLine();
-    delay(250);
 }

@@ -13,8 +13,6 @@ enum movement {
 // roda objeto
 struct wheels {
     movement mov;
-    float velocity;
-    EncoderCounter* enc;
     uint8_t l1;
     uint8_t l2;
     uint8_t channelPWM;
@@ -22,7 +20,7 @@ struct wheels {
 
 // define a rotação da roda 
 void changeDirection(wheels * wheel, movement mov){
-    wheel->enc->limpaCounter();
+    // altera a rotação do motor
     wheel->mov = mov;
 
     // define a rotação
@@ -38,8 +36,8 @@ void changeDirection(wheels * wheel, movement mov){
         break;
 
     case STOPPED:
-        digitalWrite(wheel->l1, LOW);
-        digitalWrite(wheel->l2, LOW);
+        digitalWrite(wheel->l1, HIGH);
+        digitalWrite(wheel->l2, HIGH);
         break;
     
     default:
@@ -48,9 +46,14 @@ void changeDirection(wheels * wheel, movement mov){
     //wheel.velocity = wheel.enc->getRPS();
 }
 
+void brake(wheels * wheel){
+    changeDirection(wheel, STOPPED);
+    ledcWrite(wheel->channelPWM, 4095);
+}
+
 void applyPWM(wheels * wheel, int32_t pwm){
     // define a direção
-    movement mov = STOPPED;
+    movement mov = FORWARD;
     if(pwm > 0) mov = FORWARD;
     if(pwm < 0) mov = BACKWARD;
 
@@ -59,10 +62,6 @@ void applyPWM(wheels * wheel, int32_t pwm){
 
     // aplica o pwm
     ledcWrite(wheel->channelPWM, abs(pwm));
-}
-
-void getVelocity(wheels * wheel){
-    wheel->velocity = wheel->enc->getRPS();
 }
 
 #endif
