@@ -61,7 +61,7 @@ uint8_t channelLeft = 0, channelRight = 1;
 void setup(){
     Serial.begin(115200);
     definePins();
-    SerialBT.begin("FRANK");
+    SerialBT.begin("FOMINHA");
 
     // define as propriedades das rodas
     wheelLeft.enc = &encoderLeft;
