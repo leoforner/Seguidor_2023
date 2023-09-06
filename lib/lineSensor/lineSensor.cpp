@@ -271,7 +271,7 @@ uint32_t lineSensor::readNormalized(uint8_t index){
     return value;
 }
 
-double lineSensor::searchLine(stt* state){
+double lineSensor::searchLine(){
     // calcula onde a linha esta
     double sum = 0, measuraments = 0;
     bool inLine = false;
@@ -283,12 +283,6 @@ double lineSensor::searchLine(stt* state){
         measuraments += x;      // soma das medidas
         if(x > lineTolerance) 
             inLine = true;     
-    }
-
-    // define intersecção
-    if((measuraments) > ((line * sensorCount)*0.6)){
-        *state = INTERSEC;
-        digitalWrite(21, !digitalRead(21));   
     }
 
     if(inLine){
