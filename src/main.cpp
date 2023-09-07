@@ -1,8 +1,8 @@
 // bibliotecas
 #include <BluetoothSerial.h>
 #include <lineSensor.h>
-#include <mathModel.h>
 #include <Arduino.h>
+#include <PD.h>
 
 // includes
 #include "adc.h"
@@ -18,7 +18,7 @@ int32_t pid = 0;
 uint32_t speed = 2800;
 
 // valores maximos dos sensores laterais
-uint16_t whiteLeft = 50000, whiteRight = 50000;
+uint16_t whiteLeft = 0, whiteRight = 0;
 
 uint8_t contadorIntersec = 0;
 
@@ -37,90 +37,19 @@ stt state = OFF;
 
 #ifdef FOMINHA
     uint8_t pins[] = {35, 32, 33, 25, 26, 27, 14, 12}, pinCount = 8;
-    float pesos[8]; 
 #endif
 
 // sensor frontal
 lineSensor forwardSensor(pinCount, pins, true);             
+
+// controle do carrinho (usamos apenas simplePID)
+PD control(1, 1, 1, 1);
 
 // rodas
 wheels wheelLeft, wheelRight;
 
 // canais pwm (precisa definir aqui para definir em pins.h)
 uint8_t channelLeft = 0, channelRight = 1;
-
-EncoderCounter encoderLeft(enc1, PCNT_UNIT_0, 140, 1000);
-EncoderCounter encoderRight(enc3, PCNT_UNIT_1, 140, 1000);
-
-uint32_t    lastTime1 = 0,
-            lastTime2 = 0;;
-
-double  tPID = 0, 
-        rPID = 0, 
-        lastInt1 = 0, 
-        lastInt2 = 0, 
-        lastError1 = 0, 
-        lastError2 = 0;
-
-                            // X    Y
-double carVector[3][2] =   {{-6.7, -2.5},    // roda direita
-                            {+6.7, -2.5},    // roda esquerda
-                            {+0.0, +7.0}};   // linha de sensores
-double wheelsRadius = 1.5, actingTime = 10;
-double * wheelsSpeed = new double[2];
-mathModel mm(carVector, wheelsRadius, actingTime, wheelsSpeed); 
-
-void transPID(double kp, double ki, double kd, double error){
-
-    // tempo passado
-    uint32_t deltaTime = (millis() - lastTime1)/1000;
-
-    // proporcional
-    double propo = kp * error * deltaTime;
-
-    // intergral
-    double inter = lastInt1;
-    if(abs(lastInt1) < speed/2){   
-        lastInt1 += (ki * error * deltaTime);
-        inter = lastInt1;
-    }
-
-    // derivativa
-    double deriv = kd * (error - lastError1)/deltaTime;
-
-    // soma tudo
-    tPID += abs(propo + inter + deriv) > speed ? 0 : propo + inter + deriv;
-    
-    // atualizo as variaveis globais
-    lastError1 = error;
-    lastTime1 = millis();
-}
-
-void rotaPID(double kp, double ki, double kd, double error){
-
-    // tempo passado
-    uint32_t deltaTime = (millis() - lastTime2)/1000;
-
-    // proporcional
-    double propo = kp * error * deltaTime;
-
-    // intergral
-    double inter = lastInt2;
-    if(abs(lastInt2) < speed/2){   
-        lastInt2 += (ki * error * deltaTime);
-        inter = lastInt2;
-    }
-
-    // derivativa
-    double deriv = kd * (error - lastError2)/deltaTime;
-
-    // soma tudo
-    rPID += abs(propo + inter + deriv) > speed ? 0 : propo + inter + deriv;
-    
-    // atualizo as variaveis globais
-    lastError2 = error;
-    lastTime2 = millis();
-}
 
 void setup(){
     Serial.begin(115200);
@@ -171,21 +100,8 @@ void setup(){
     SerialBT.println("Calibrando...");
     forwardSensor.begin();
     forwardSensor.setLed(led);
-
-    // a linha tem 5.7 centimetros com 8 sensores
-    for(int i = 0; i < 8; i++)
-        pesos[i] = i * 5.7/7; 
-    // altera o peso padrao para calcular a distancia da linha
-    forwardSensor.setweights(pesos);
-
-    // dessa forma a saida esta em nanometro
-    // divindo por 100 a medida passa para centimetros
-    forwardSensor.setTrackCharacteristics(100, 0, 30);
-
-    
     forwardSensor.calibration(STATIC);
 
-    /*
     SerialBT.println("Pressione o botao para iniciar calibração dos sensores laterais");
     while(state < 2) delay(10);
 
@@ -205,35 +121,43 @@ void setup(){
     SerialBT.printf("kp: %.3f\nki: %.3f\nkd: %.3f\nspeed: %d\n", kp, ki, kd, speed);
     SerialBT.println((analogicoParaTensao(analogRead(divTensao)))*3.96); // 7.6/1.92 7.6v viram 1.92v (divisor de tensão));
 
-    // sinalização piscando led para começar a pista
+    // sinalização piscando led
     for(uint8_t i = 0; i < 4; i++){
         digitalWrite(led, HIGH);
         delay(100);
         digitalWrite(led, LOW);
         delay(500);
-    }*/
+    }
 }
 
 void loop(){
-    // distancia entre o sensor e a linha em cm
-    double position = (forwardSensor.searchLine()/100) - 5.7/2;
+    // final da pista
+    if(state == FINAL || state == OFF){
+        // freia as rodas para parar inercia do carrinho
+        brake(&wheelLeft);
+        brake(&wheelRight);
+        return;
+    }
 
-    // velocidade media
-    double vm = (encoderLeft.getRPS() + encoderRight.getRPS())/2;
+    // calcula a posição da linha (pinCout * 1000)/2 = 3500 (index 0 nao soma em search line)
+    position = (forwardSensor.searchLine(&state) - 3500)/100;
 
-    // velocidade de rotação
-    double rot = (encoderLeft.getRPS() + encoderRight.getRPS())/(2*6.7);
-    
-    // calcula o setPoint de cada roda em cm/s
-    mm.calculateSetPoints(position);
+    // calcula o pid
+    pid = control.simplePID(kp, ki, kd, position, 2*speed);
 
-    double setPointVM = (wheelsSpeed[0] + wheelsSpeed[1])/2;
-    double setPointROT = (wheelsSpeed[0] + wheelsSpeed[1])/(2*6.7);
+    // velocidade toral das rodas
+    int16_t velRight = speed - pid;
+    int16_t velLeft = speed + pid;
 
-    transPID(2, 2, 2, setPointVM - vm);
-    rotaPID(2, 2, 2, setPointROT - rot);
+    // calcula pwm max (correspondente a 6v)
+    /*float tensaoBateria = (analogicoParaTensao(analogRead(divTensao)))* 3.96; // 7.6/1.92; //7.6v viram 1.92v (divisor de tensão)
+    if(tensaoBateria < 7.8) state == OFF; // desliga
+    int pwm_7volts = (7.0*4095)/tensaoBateria;*/
+    // if(pwm_6volts > 4095) pwm_6volts = 4095; (na fonte de bancada para testar, use isso)
 
-    applyPWM(&wheelLeft, tPID + rPID);
-    applyPWM(&wheelRight, tPID - rPID);
-    delay(10);
+
+    applyPWM(&wheelRight, velRight);
+    applyPWM(&wheelLeft, velLeft);
+
+    delay(1);
 }
