@@ -10,8 +10,7 @@
 #include "times.h"
 #include "wheels.h"
 #include "exceptions.h"
-#include "mapeamento.h"
-#include "EncoderCounter.h"
+
 // SerialBT bluetooth
 BluetoothSerial SerialBT;
 double position;
@@ -52,13 +51,9 @@ wheels wheelLeft, wheelRight;
 // canais pwm (precisa definir aqui para definir em pins.h)
 uint8_t channelLeft = 0, channelRight = 1;
 
-
-/*--------MAPEAMENTO--------*/
-EncoderCounter encoder(enc1, PCNT_UNIT_0, 140); //
-int16_t NumerodeTicks[31];
+//
 int sinalizacao_atual = 0;
-bool dados_printados = false;  
-/*--------------------------*/
+bool printFinal = false;
 
 void setup(){
     Serial.begin(115200);
@@ -128,7 +123,7 @@ void setup(){
 
     // debug
     SerialBT.printf("kp: %.3f\nki: %.3f\nkd: %.3f\nspeed: %d\n", kp, ki, kd, speed);
-    SerialBT.println((analogicoParaTensao(analogRead(divTensao)))* 3.96);
+    SerialBT.println((analogicoParaTensao(analogRead(divTensao)))*3.96); // 7.6/1.92 7.6v viram 1.92v (divisor de tensão));
 
     // sinalização piscando led
     for(uint8_t i = 0; i < 4; i++){
@@ -137,40 +132,26 @@ void setup(){
         digitalWrite(led, LOW);
         delay(500);
     }
-
-    //pausa contador do encoder
-    encoder.limpaCounter();
-   // encoder.pauseCounting();
 }
-  
-  // void printarcoleta()
-    //{
-      //  for(int i = 0; i <= 30; i++)
-       // {
-         //   SerialBT.print("Trajeto: "); SerialBT.print(i); SerialBT.print("| "); SerialBT.print("Ticks: "); SerialBT.println(NumerodeTicks[i]);
-       // }
-    //} 
-  
+
 void loop(){
-    /*--------MAPEAMENTO--------*/
-    //coletaEncoder();
-    /*--------------------------*/
-    //SerialBT.println(encoder.getPulses());
     // final da pista
     if(state == FINAL || state == OFF){
-        // \freia as rodas para parar inercia do carrinho
-        brake(&wheelLeft);
-        brake(&wheelRight);
-        if(!dados_printados)
-        {
-            //printarcoleta();
-            dados_printados = true;    
-        }
-        
-        return;
+        // freia as rodas para parar inercia do carrinho
+      //  brake(&wheelLeft);
+      //  brake(&wheelRight);
+      //  if(!printFinal)
+     //   {
+       // printFinal = true;
+        SerialBT.println(sinalizacao_atual);
+        state = PISTA;
+        sinalizacao_atual = 0;
+
+     //   }
+       // return;
     }
 
-    // calcula a posição da linha (pinCout * 1000)/2 = 2500 (index 0 nao soma em search line)
+    // calcula a posição da linha (pinCout * 1000)/2 = 3500 (index 0 nao soma em search line)
     position = (forwardSensor.searchLine(&state) - 3500)/100;
 
     // calcula o pid
@@ -184,13 +165,29 @@ void loop(){
     if(pid > 0) velRight = speed - pid;
     else        velLeft = speed + pid;
 
+    /*acabamos tirando pois estava diminuindo o torque das rodas e 
+    / o robo nao conseguia fazer curvas fechadas apos retas longas*/
+
+    // calcula pwm max (correspondente a 6v)
+    /*float tensaoBateria = (analogicoParaTensao(analogRead(divTensao)))* 3.96; // 7.6/1.92; //7.6v viram 1.92v (divisor de tensão)
+    if(tensaoBateria < 7.7) state == OFF; // desliga
+    int pwm_6volts = (8.0*4095)/tensaoBateria;
+    // if(pwm_6volts > 4095) pwm_6volts = 4095; (na fonte de bancada para testar, use isso)
+
+    // pwm correspondente ao ponto que a roda nao gira
+    uint8_t pMorto = 0.2; // 20% do pwm maximo
+
+    // mapeia o pwm resultante para a faixa de pwm q queremos 
+    if(velRight >= 0)   velRight = map(velRight, 0, speed, pMorto*pwm_6volts, pwm_6volts);
+    else                velRight = map(velRight, -speed, 0, -pwm_6volts, -pMorto*pwm_6volts);
+
+    if(velLeft >= 0)    velLeft = map(velLeft, 0, speed, pMorto*pwm_6volts, pwm_6volts);
+    else                velLeft = map(velLeft, -speed, 0, -pwm_6volts, pMorto*pwm_6volts*-1);*/
+
+
     // aplica o pwm
     applyPWM(&wheelRight, velRight);
     applyPWM(&wheelLeft, velLeft);  
-    
-    // debug (serialBT.println leva mto tempo acaba afetando o desempenho do loop. coloque na thread do segundo nucleo)
-    //SerialBT.printf("p: %.2f\t - PID: %d\t - pwm1: %d\t - pwm2: %d\n", position, pid, velRight, velLeft);
 
     delay(2);
 }
-
