@@ -1,6 +1,7 @@
 // bibliotecas
 #include <BluetoothSerial.h>
 #include <lineSensor.h>
+#include <mathModel.h>
 #include <Arduino.h>
 
 // includes
@@ -17,7 +18,7 @@ int32_t pid = 0;
 uint32_t speed = 2800;
 
 // valores maximos dos sensores laterais
-uint16_t whiteLeft = 0, whiteRight = 0;
+uint16_t whiteLeft = 50000, whiteRight = 50000;
 
 uint8_t contadorIntersec = 0;
 
@@ -48,7 +49,8 @@ wheels wheelLeft, wheelRight;
 // canais pwm (precisa definir aqui para definir em pins.h)
 uint8_t channelLeft = 0, channelRight = 1;
 
-EncoderCounter encLeft(enc1);
+EncoderCounter encoderLeft(enc1, PCNT_UNIT_0, 140, 1000);
+EncoderCounter encoderRight(enc3, PCNT_UNIT_1, 140, 1000);
 
 uint32_t    lastTime1 = 0,
             lastTime2 = 0;;
@@ -60,23 +62,13 @@ double  tPID = 0,
         lastError1 = 0, 
         lastError2 = 0;
 
-double tempo, 
-       omega,
-       distan,
-       peta, 
-       vel, 
-       vx, 
-       vy, 
-       v1[2], 
-       v2[2], 
-       r = 4.0, 
-       p, 
-       d = 5, 
-       d1 = -2.5, 
-       d2 = 2.5, 
-       ve,
-       vd,
-       R;
+                            // X    Y
+double carVector[3][2] =   {{-6.7, -2.5},    // roda direita
+                            {+6.7, -2.5},    // roda esquerda
+                            {+0.0, +7.0}};   // linha de sensores
+double wheelsRadius = 1.5, actingTime = 10;
+double * wheelsSpeed = new double[2];
+mathModel mm(carVector, wheelsRadius, actingTime, wheelsSpeed); 
 
 void transPID(double kp, double ki, double kd, double error){
 
@@ -104,7 +96,7 @@ void transPID(double kp, double ki, double kd, double error){
     lastTime1 = millis();
 }
 
-void transPID(double kp, double ki, double kd, double error){
+void rotaPID(double kp, double ki, double kd, double error){
 
     // tempo passado
     uint32_t deltaTime = (millis() - lastTime2)/1000;
@@ -128,26 +120,6 @@ void transPID(double kp, double ki, double kd, double error){
     // atualizo as variaveis globais
     lastError2 = error;
     lastTime2 = millis();
-}
-
-void transPID(double kp, double ki, double kd, double error){
-
-    uint32_t deltaTime = (millis() - lastTime1)/1000;
-
-    double propo = kp * error * deltaTime;
-
-    double inter = lastInt1;
-    if(abs(lastInt1) < speed/2){   
-        lastInt1 += (ki * error * deltaTime);
-        inter = lastInt1;
-    }
-
-    double deriv = kd * (error - lastError1)/deltaTime;
-
-    tPID += abs(propo + inter + deriv) > speed ? 0 : propo + inter + deriv;
-    
-    lastError1 = error;
-    lastTime1 = millis();
 }
 
 void setup(){
@@ -200,14 +172,20 @@ void setup(){
     forwardSensor.begin();
     forwardSensor.setLed(led);
 
+    // a linha tem 5.7 centimetros com 8 sensores
     for(int i = 0; i < 8; i++)
-        pesos[i] = i * 5.7/7;
+        pesos[i] = i * 5.7/7; 
+    // altera o peso padrao para calcular a distancia da linha
     forwardSensor.setweights(pesos);
+
+    // dessa forma a saida esta em nanometro
+    // divindo por 100 a medida passa para centimetros
     forwardSensor.setTrackCharacteristics(100, 0, 30);
 
-    /*
+    
     forwardSensor.calibration(STATIC);
 
+    /*
     SerialBT.println("Pressione o botao para iniciar calibração dos sensores laterais");
     while(state < 2) delay(10);
 
@@ -237,34 +215,25 @@ void setup(){
 }
 
 void loop(){
-    double // distancia entre o sensor e a linha em cm
-    p = (forwardSensor.searchLine()/100) - 5.7/2;
+    // distancia entre o sensor e a linha em cm
+    double position = (forwardSensor.searchLine()/100) - 5.7/2;
 
-    // tempo para calcular velocidades
-    int8_t tempo = 1;
+    // velocidade media
+    double vm = (encoderLeft.getRPS() + encoderRight.getRPS())/2;
 
-    // angulo entre o eixo do carrinho e a linha
-    peta = atan2(p, d);
+    // velocidade de rotação
+    double rot = (encoderLeft.getRPS() + encoderRight.getRPS())/(2*6.7);
+    
+    // calcula o setPoint de cada roda em cm/s
+    mm.calculateSetPoints(position);
 
-    //Serial.printf("p: %.2f\tpeta: %.2f\n", p, peta);
+    double setPointVM = (wheelsSpeed[0] + wheelsSpeed[1])/2;
+    double setPointROT = (wheelsSpeed[0] + wheelsSpeed[1])/(2*6.7);
 
-    omega = peta/tempo;
-    vel = d/tempo;
-    vx = sin(peta) * vel;
-    vy = cos(peta) * vel;
+    transPID(2, 2, 2, setPointVM - vm);
+    rotaPID(2, 2, 2, setPointROT - rot);
 
-    // velocidade em XY de cada roda
-    v1[0] = vx + (d1 * omega * cos(peta));
-    v1[1] = vy + (d1 * omega * sin(peta));
-
-    v2[0] = vx + (d2 * omega * cos(peta));
-    v2[1] = vy + (d2 * omega * sin(peta));
-
-    Serial.printf("%03d\t%.3f\t", tempo, peta);
-
-    // calcula a velocidade vetorial do centro das rodas
-    ve = sqrt(v1[0]*v1[0] + v1[1]*v1[1]);
-    vd = sqrt(v2[0]*v2[0] + v2[1]*v2[1]);
-
-    double vm = 
+    applyPWM(&wheelLeft, tPID + rPID);
+    applyPWM(&wheelRight, tPID - rPID);
+    delay(10);
 }

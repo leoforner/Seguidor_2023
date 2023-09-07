@@ -37,7 +37,7 @@ void setup() {
 uint8_t state = 0;
 void loop() {
     // distancia entre o sensor e a linha em cm
-    double lineDistance = (ls.searchLine(&state)/100.0) - 5.70/2.0;
+    double lineDistance = (ls.searchLine()/100.0) - 5.70/2.0;
 
     uint32_t timer = 0;
     timer = micros(); // salva o tempo
